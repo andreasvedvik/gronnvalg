@@ -22,15 +22,21 @@ const ContactModal = lazy(() => import('@/components/modals/ContactModal'));
 const ChatModal = lazy(() => import('@/components/modals/ChatModal'));
 
 // Utils
-import { fetchProduct, searchAlternatives, ProductData } from '@/lib/openfoodfacts';
+import { fetchProduct, searchAlternatives, searchSimilarProducts, ProductData } from '@/lib/openfoodfacts';
 import { calculateGrønnScore, GrønnScoreResult } from '@/lib/scoring';
 import analytics from '@/lib/analytics';
 
 // Types
+interface SimilarProducts {
+  norwegian: ProductData[];
+  other: ProductData[];
+}
+
 interface ScanResult {
   product: ProductData;
   score: GrønnScoreResult;
   alternatives: ProductData[];
+  similarProducts?: SimilarProducts;
   timestamp?: number;
 }
 
@@ -149,31 +155,38 @@ export default function Home() {
 
       const score = calculateGrønnScore(product);
 
+      // Fetch both alternatives and similar products in parallel
       let alternatives: ProductData[] = [];
-      if (product.category) {
-        // Pass product name and full categories for smarter matching
-        const fullCategories = product.raw?.categories || product.category;
-        alternatives = await searchAlternatives(fullCategories, 5, product.name);
-        alternatives = alternatives.filter((a) => a.barcode !== product.barcode);
+      let similarProducts: SimilarProducts = { norwegian: [], other: [] };
 
-        // Apply filters
-        if (filters.norwegianOnly) {
-          alternatives = alternatives.filter(a =>
-            a.origin?.toLowerCase().includes('norge') ||
-            a.origin?.toLowerCase().includes('norway')
-          );
-        }
-        if (filters.organic) {
-          alternatives = alternatives.filter(a =>
-            a.labels?.some(label =>
-              label.toLowerCase().includes('økologisk') ||
-              label.toLowerCase().includes('organic')
-            )
-          );
-        }
+      // Always search for similar products
+      const [altResult, similarResult] = await Promise.all([
+        product.category
+          ? searchAlternatives(product.raw?.categories || product.category, 5, product.name)
+          : Promise.resolve([]),
+        searchSimilarProducts(product, 6),
+      ]);
+
+      alternatives = altResult.filter((a) => a.barcode !== product.barcode);
+      similarProducts = similarResult;
+
+      // Apply filters to alternatives
+      if (filters.norwegianOnly) {
+        alternatives = alternatives.filter(a =>
+          a.origin?.toLowerCase().includes('norge') ||
+          a.origin?.toLowerCase().includes('norway')
+        );
+      }
+      if (filters.organic) {
+        alternatives = alternatives.filter(a =>
+          a.labels?.some(label =>
+            label.toLowerCase().includes('økologisk') ||
+            label.toLowerCase().includes('organic')
+          )
+        );
       }
 
-      const result: ScanResult = { product, score, alternatives, timestamp: Date.now() };
+      const result: ScanResult = { product, score, alternatives, similarProducts, timestamp: Date.now() };
       setScanResult(result);
       setShowScanner(false);
       analytics.scanCompleted(barcode, score.total);
@@ -459,6 +472,7 @@ export default function Home() {
           product={scanResult.product}
           score={scanResult.score}
           alternatives={scanResult.alternatives}
+          similarProducts={scanResult.similarProducts}
           onClose={() => setScanResult(null)}
         />
       )}

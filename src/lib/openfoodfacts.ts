@@ -491,3 +491,170 @@ export async function searchProducts(query: string, limit: number = 10): Promise
     return [];
   }
 }
+
+// Search for similar products (always returns results, not just "better" alternatives)
+export async function searchSimilarProducts(
+  product: ProductData,
+  limit: number = 6
+): Promise<{ norwegian: ProductData[]; other: ProductData[] }> {
+  const searchCategory = getBestSearchCategory(product.name, product.category);
+  const cacheKey = `similar:${searchCategory}:${limit}`;
+
+  try {
+    console.log('🔍 Searching similar products for:', product.name, '-> category:', searchCategory);
+
+    // Search for products in the same category (not restricted to Norway)
+    const searchUrl = `https://world.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(searchCategory)}&sort_by=unique_scans_n&page_size=${limit * 3}&json=1`;
+
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)',
+      },
+    });
+
+    if (!response.ok) {
+      return { norwegian: [], other: [] };
+    }
+
+    const data = await response.json();
+
+    if (!data.products || data.products.length === 0) {
+      // Fallback: search by product name keywords
+      return await searchByNameKeywords(product.name, product.barcode, limit);
+    }
+
+    const allProducts = data.products
+      .filter((p: any) => p.product_name && p.code !== product.barcode) // Exclude the scanned product
+      .map((p: any) => {
+        const isNorwegian = isProductNorwegian(p);
+        const ecoscoreData = p.ecoscore_data;
+        return {
+          barcode: p.code,
+          name: p.product_name || 'Ukjent',
+          brand: p.brands || '',
+          imageUrl: p.image_small_url || p.image_url || '',
+          category: p.categories?.split(',')[0]?.trim() || '',
+          origin: p.origins || (isNorwegian ? 'Norge' : ''),
+          originTags: p.origins_tags || [],
+          manufacturingPlaces: p.manufacturing_places || '',
+          packaging: p.packaging || '',
+          packagingTags: p.packaging_tags || [],
+          packagingMaterials: p.packaging_materials_tags || [],
+          packagingRecycling: p.packaging_recycling_tags || [],
+          labels: p.labels?.split(',').map((l: string) => l.trim()) || [],
+          labelTags: p.labels_tags || [],
+          ecoscore: {
+            grade: p.ecoscore_grade || 'unknown',
+            score: p.ecoscore_score || 0,
+            hasDetailedData: !!(ecoscoreData?.adjustments),
+            transportScore: ecoscoreData?.adjustments?.origins_of_ingredients?.value,
+            packagingScore: ecoscoreData?.adjustments?.packaging?.value,
+          },
+          nutriscore: {
+            grade: p.nutriscore_grade || 'unknown',
+            score: p.nutriscore_score || 0,
+          },
+          novaGroup: p.nova_group || 0,
+          ingredients: '',
+          isNorwegian,
+          raw: p,
+        } as ProductData;
+      });
+
+    // Split into Norwegian and other products
+    const norwegian = allProducts.filter((p: ProductData) => p.isNorwegian).slice(0, Math.ceil(limit / 2));
+    const other = allProducts.filter((p: ProductData) => !p.isNorwegian).slice(0, Math.ceil(limit / 2));
+
+    console.log(`✅ Found ${norwegian.length} Norwegian + ${other.length} other similar products`);
+
+    return { norwegian, other };
+  } catch (error) {
+    console.error('Error searching similar products:', error);
+    return { norwegian: [], other: [] };
+  }
+}
+
+// Fallback search by product name keywords
+async function searchByNameKeywords(
+  productName: string,
+  excludeBarcode: string,
+  limit: number
+): Promise<{ norwegian: ProductData[]; other: ProductData[] }> {
+  try {
+    // Extract meaningful keywords from product name
+    const keywords = productName
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(w => w.length > 2)
+      .slice(0, 2)
+      .join(' ');
+
+    if (!keywords) {
+      return { norwegian: [], other: [] };
+    }
+
+    const searchUrl = `https://world.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(keywords)}&sort_by=unique_scans_n&page_size=${limit * 2}&json=1`;
+
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)',
+      },
+    });
+
+    if (!response.ok) {
+      return { norwegian: [], other: [] };
+    }
+
+    const data = await response.json();
+
+    if (!data.products) {
+      return { norwegian: [], other: [] };
+    }
+
+    const allProducts = data.products
+      .filter((p: any) => p.product_name && p.code !== excludeBarcode)
+      .map((p: any) => {
+        const isNorwegian = isProductNorwegian(p);
+        const ecoscoreData = p.ecoscore_data;
+        return {
+          barcode: p.code,
+          name: p.product_name || 'Ukjent',
+          brand: p.brands || '',
+          imageUrl: p.image_small_url || p.image_url || '',
+          category: p.categories?.split(',')[0]?.trim() || '',
+          origin: p.origins || (isNorwegian ? 'Norge' : ''),
+          originTags: p.origins_tags || [],
+          manufacturingPlaces: p.manufacturing_places || '',
+          packaging: p.packaging || '',
+          packagingTags: p.packaging_tags || [],
+          packagingMaterials: p.packaging_materials_tags || [],
+          packagingRecycling: p.packaging_recycling_tags || [],
+          labels: p.labels?.split(',').map((l: string) => l.trim()) || [],
+          labelTags: p.labels_tags || [],
+          ecoscore: {
+            grade: p.ecoscore_grade || 'unknown',
+            score: p.ecoscore_score || 0,
+            hasDetailedData: !!(ecoscoreData?.adjustments),
+            transportScore: ecoscoreData?.adjustments?.origins_of_ingredients?.value,
+            packagingScore: ecoscoreData?.adjustments?.packaging?.value,
+          },
+          nutriscore: {
+            grade: p.nutriscore_grade || 'unknown',
+            score: p.nutriscore_score || 0,
+          },
+          novaGroup: p.nova_group || 0,
+          ingredients: '',
+          isNorwegian,
+          raw: p,
+        } as ProductData;
+      });
+
+    const norwegian = allProducts.filter((p: ProductData) => p.isNorwegian).slice(0, Math.ceil(limit / 2));
+    const other = allProducts.filter((p: ProductData) => !p.isNorwegian).slice(0, Math.ceil(limit / 2));
+
+    return { norwegian, other };
+  } catch (error) {
+    console.error('Error in keyword search:', error);
+    return { norwegian: [], other: [] };
+  }
+}

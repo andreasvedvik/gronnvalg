@@ -10,9 +10,17 @@ interface ProductCardProps {
   score: GrønnScoreResult;
   onClose: () => void;
   alternatives?: ProductData[];
+  similarProducts?: {
+    norwegian: ProductData[];
+    other: ProductData[];
+  };
 }
 
-export default function ProductCard({ product, score, onClose, alternatives = [] }: ProductCardProps) {
+export default function ProductCard({ product, score, onClose, alternatives = [], similarProducts }: ProductCardProps) {
+  // Combine all available similar products
+  const norwegianProducts = similarProducts?.norwegian || alternatives.filter(a => a.isNorwegian);
+  const otherProducts = similarProducts?.other || alternatives.filter(a => !a.isNorwegian);
+  const hasAnyProducts = norwegianProducts.length > 0 || otherProducts.length > 0;
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
       <div className="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl shadow-2xl">
@@ -216,52 +224,113 @@ export default function ProductCard({ product, score, onClose, alternatives = []
           </div>
         </div>
 
-        {/* Alternatives Section */}
-        {alternatives.length > 0 && (
-          <div className="mx-4 mt-4 mb-6 bg-green-50 rounded-2xl p-4">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <span className="text-lg">🇳🇴</span>
-              Norsk Alternativ
-            </h3>
-            <div className="space-y-2">
-              {alternatives.slice(0, 3).map((alt, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm"
-                >
-                  <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {alt.imageUrl ? (
-                      <img
-                        src={alt.imageUrl}
-                        alt={alt.name}
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <span className="text-2xl">📦</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-gray-900 truncate">{alt.name}</span>
-                      <div
-                        className={`px-2 py-0.5 ${getScoreColor(
-                          alt.ecoscore.grade === 'a' ? 90 :
-                          alt.ecoscore.grade === 'b' ? 70 :
-                          alt.ecoscore.grade === 'c' ? 50 :
-                          alt.ecoscore.grade === 'd' ? 30 : 20
-                        )} rounded-full flex-shrink-0`}
-                      >
-                        <span className="text-white text-sm font-bold">
-                          {alt.ecoscore.grade?.toUpperCase() || '?'}
-                        </span>
+        {/* Similar Products Section - Always show if we have any */}
+        {hasAnyProducts && (
+          <div className="mx-4 mt-4 mb-6 space-y-4">
+            {/* Norwegian Products */}
+            {norwegianProducts.length > 0 && (
+              <div className="bg-green-50 rounded-2xl p-4">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-lg">🇳🇴</span>
+                  {product.isNorwegian ? 'Andre norske produkter' : 'Norske alternativer'}
+                </h3>
+                <div className="space-y-2">
+                  {norwegianProducts.slice(0, 3).map((alt, i) => (
+                    <div
+                      key={`no-${i}`}
+                      className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm"
+                    >
+                      <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {alt.imageUrl ? (
+                          <img
+                            src={alt.imageUrl}
+                            alt={alt.name}
+                            className="w-full h-full object-contain"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="text-2xl">📦</span>
+                        )}
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium text-gray-900 truncate">{alt.name}</span>
+                          <div
+                            className={`px-2 py-0.5 ${getScoreColor(
+                              alt.ecoscore.grade === 'a' ? 90 :
+                              alt.ecoscore.grade === 'b' ? 70 :
+                              alt.ecoscore.grade === 'c' ? 50 :
+                              alt.ecoscore.grade === 'd' ? 30 : 20
+                            )} rounded-full flex-shrink-0`}
+                          >
+                            <span className="text-white text-sm font-bold">
+                              {alt.ecoscore.grade?.toUpperCase() || '?'}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 truncate">{alt.brand}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                     </div>
-                    <p className="text-xs text-gray-500 truncate">{alt.brand}</p>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {/* Other Similar Products */}
+            {otherProducts.length > 0 && (
+              <div className="bg-gray-50 rounded-2xl p-4">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-lg">🌍</span>
+                  Lignende produkter
+                </h3>
+                <div className="space-y-2">
+                  {otherProducts.slice(0, 3).map((alt, i) => (
+                    <div
+                      key={`other-${i}`}
+                      className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm"
+                    >
+                      <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {alt.imageUrl ? (
+                          <img
+                            src={alt.imageUrl}
+                            alt={alt.name}
+                            className="w-full h-full object-contain"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span className="text-2xl">📦</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium text-gray-900 truncate">{alt.name}</span>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {alt.origin && (
+                              <span className="text-xs text-gray-400">{alt.origin.slice(0, 10)}</span>
+                            )}
+                            <div
+                              className={`px-2 py-0.5 ${getScoreColor(
+                                alt.ecoscore.grade === 'a' ? 90 :
+                                alt.ecoscore.grade === 'b' ? 70 :
+                                alt.ecoscore.grade === 'c' ? 50 :
+                                alt.ecoscore.grade === 'd' ? 30 : 20
+                              )} rounded-full`}
+                            >
+                              <span className="text-white text-sm font-bold">
+                                {alt.ecoscore.grade?.toUpperCase() || '?'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 truncate">{alt.brand}</p>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
