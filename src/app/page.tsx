@@ -28,7 +28,9 @@ import {
   ArrowLeftRight,
   Send,
   Bot,
-  ChevronDown
+  ChevronDown,
+  Search,
+  Loader2
 } from 'lucide-react';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import ProductCard from '@/components/ProductCard';
