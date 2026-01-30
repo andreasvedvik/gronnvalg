@@ -205,18 +205,91 @@ function isProductNorwegian(product: any): boolean {
   return false;
 }
 
+// Category mapping for better alternative matching
+// Maps broad categories to more specific search terms
+const CATEGORY_MAPPINGS: Record<string, string[]> = {
+  // Sodas and soft drinks
+  'cola': ['sodas', 'colas', 'soft drinks', 'brus'],
+  'soda': ['sodas', 'colas', 'soft drinks', 'brus'],
+  'brus': ['sodas', 'colas', 'soft drinks', 'brus'],
+  'soft drink': ['sodas', 'soft drinks', 'brus'],
+  'carbonated': ['sodas', 'carbonated drinks', 'brus'],
+  // Dairy
+  'milk': ['milk', 'melk'],
+  'melk': ['milk', 'melk'],
+  'yogurt': ['yogurt', 'yoghurt'],
+  'cheese': ['cheese', 'ost'],
+  'ost': ['cheese', 'ost'],
+  // Snacks
+  'chips': ['chips', 'crisps', 'snacks'],
+  'chocolate': ['chocolate', 'sjokolade'],
+  'sjokolade': ['chocolate', 'sjokolade'],
+  'candy': ['candy', 'sweets', 'godteri'],
+  // Bread and cereals
+  'bread': ['bread', 'brød'],
+  'brød': ['bread', 'brød'],
+  'cereal': ['cereals', 'frokostblanding'],
+  // Meat
+  'meat': ['meat', 'kjøtt'],
+  'kjøtt': ['meat', 'kjøtt'],
+  'chicken': ['chicken', 'kylling'],
+  'kylling': ['chicken', 'kylling'],
+};
+
+// Find the best category for searching alternatives
+function getBestSearchCategory(productName: string, categories: string): string {
+  const nameLower = productName.toLowerCase();
+  const categoriesLower = categories.toLowerCase();
+
+  // Check product name first for specific product types
+  for (const [keyword, _mappings] of Object.entries(CATEGORY_MAPPINGS)) {
+    if (nameLower.includes(keyword)) {
+      return keyword;
+    }
+  }
+
+  // Check if it's a cola/soda specifically
+  if (nameLower.includes('cola') || nameLower.includes('zero') || nameLower.includes('pepsi') || nameLower.includes('fanta') || nameLower.includes('sprite')) {
+    return 'sodas';
+  }
+
+  // Parse categories and find most specific one
+  const categoryList = categories.split(',').map(c => c.trim().toLowerCase());
+
+  // Prefer more specific categories (longer names or containing specific keywords)
+  const specificCategories = categoryList.filter(c =>
+    c.includes('cola') || c.includes('soda') || c.includes('brus') ||
+    c.includes('chips') || c.includes('chocolate') || c.includes('yogurt') ||
+    c.includes('cheese') || c.includes('bread') || c.includes('meat')
+  );
+
+  if (specificCategories.length > 0) {
+    return specificCategories[0];
+  }
+
+  // Fall back to first category, but try to avoid overly generic ones
+  const genericCategories = ['beverages', 'drinks', 'food', 'drikkevarer', 'mat'];
+  const nonGeneric = categoryList.find(c => !genericCategories.some(g => c.includes(g)));
+
+  return nonGeneric || categoryList[0] || categories.split(',')[0]?.trim() || '';
+}
+
 // Search for alternative products - ONLY truly Norwegian products
-export async function searchAlternatives(category: string, limit: number = 5): Promise<ProductData[]> {
-  const cacheKey = `alt:${category}:${limit}`;
+export async function searchAlternatives(category: string, limit: number = 5, productName: string = ''): Promise<ProductData[]> {
+  // Get a better search category based on product name and categories
+  const searchCategory = getBestSearchCategory(productName, category);
+  const cacheKey = `alt:${searchCategory}:${limit}`;
   const cached = getCached(searchCache, cacheKey);
   if (cached !== undefined) {
-    console.log('📦 Cache hit for alternatives:', category);
+    console.log('📦 Cache hit for alternatives:', searchCategory);
     return cached;
   }
 
   try {
+    console.log('🔍 Searching alternatives for category:', searchCategory, '(original:', category, ')');
+
     // Search for products in the same category, fetch more to filter for Norwegian
-    const searchUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(category)}&tagtype_1=countries&tag_contains_1=contains&tag_1=norway&sort_by=ecoscore_score&page_size=${limit * 4}&json=1`;
+    const searchUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(searchCategory)}&tagtype_1=countries&tag_contains_1=contains&tag_1=norway&sort_by=ecoscore_score&page_size=${limit * 4}&json=1`;
 
     const response = await fetch(searchUrl, {
       headers: {

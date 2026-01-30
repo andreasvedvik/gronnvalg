@@ -151,7 +151,9 @@ export default function Home() {
 
       let alternatives: ProductData[] = [];
       if (product.category) {
-        alternatives = await searchAlternatives(product.category);
+        // Pass product name and full categories for smarter matching
+        const fullCategories = product.raw?.categories || product.category;
+        alternatives = await searchAlternatives(fullCategories, 5, product.name);
         alternatives = alternatives.filter((a) => a.barcode !== product.barcode);
 
         // Apply filters
