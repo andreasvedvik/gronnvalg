@@ -133,6 +133,40 @@ export default function PersonvernPage() {
           </div>
         </section>
 
+        {/* Analytics */}
+        <section className="mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Eye className="w-5 h-5 text-green-600" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Anonym bruksstatistikk</h2>
+          </div>
+
+          <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              For å forbedre appen samler vi anonym bruksstatistikk. Dette inkluderer:
+            </p>
+            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
+              <li className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5"></span>
+                Antall skanninger (uten produktidentifikasjon)
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5"></span>
+                Hvilke funksjoner som brukes (filter, sammenligning, etc.)
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5"></span>
+                Generell enhetsinformasjon (skjermstørrelse, språk)
+              </li>
+            </ul>
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <p className="text-sm text-green-800 dark:text-green-300">
+                <strong>Viktig:</strong> Vi samler aldri inn personlig identifiserbar informasjon,
+                IP-adresser lagres ikke, og det er ingen sporing på tvers av nettsider.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Your Rights */}
         <section className="mb-6">
           <div className="flex items-center gap-2 mb-4">
@@ -174,10 +208,12 @@ export default function PersonvernPage() {
             </p>
             <button
               onClick={() => {
-                if (confirm('Er du sikker på at du vil slette all GrønnValg-data? Dette inkluderer skannehistorikk, handleliste og innstillinger.')) {
+                if (confirm('Er du sikker på at du vil slette all GrønnValg-data? Dette inkluderer skannehistorikk, handleliste, innstillinger og bruksstatistikk.')) {
                   localStorage.removeItem('gronnvalg-history');
                   localStorage.removeItem('gronnvalg-shopping');
                   localStorage.removeItem('gronnvalg-darkmode');
+                  localStorage.removeItem('gronnvalg_analytics');
+                  sessionStorage.removeItem('gronnvalg_session');
                   alert('All data er slettet. Siden vil nå lastes på nytt.');
                   window.location.href = '/';
                 }

@@ -24,6 +24,7 @@ import ChatModal from '@/components/modals/ChatModal';
 // Utils
 import { fetchProduct, searchAlternatives, ProductData } from '@/lib/openfoodfacts';
 import { calculateGrønnScore, GrønnScoreResult } from '@/lib/scoring';
+import analytics from '@/lib/analytics';
 
 // Types
 interface ScanResult {
@@ -127,18 +128,21 @@ export default function Home() {
     setDarkMode(newMode);
     localStorage.setItem('gronnvalg-darkmode', String(newMode));
     document.documentElement.classList.toggle('dark', newMode);
+    analytics.darkModeToggled(newMode);
   };
 
   // Handle barcode scan
   const handleScan = async (barcode: string) => {
     setIsLoading(true);
     setError(null);
+    analytics.scanStarted();
 
     try {
       const product = await fetchProduct(barcode);
 
       if (!product) {
         setError(`Produktet med strekkode ${barcode} ble ikke funnet. Prøv et annet produkt.`);
+        analytics.scanFailed(barcode, 'not_found');
         setIsLoading(false);
         return;
       }
@@ -170,6 +174,7 @@ export default function Home() {
       const result: ScanResult = { product, score, alternatives, timestamp: Date.now() };
       setScanResult(result);
       setShowScanner(false);
+      analytics.scanCompleted(barcode, score.total);
 
       setRecentScans((prev) => {
         const filtered = prev.filter((r) => r.product.barcode !== barcode);
@@ -178,6 +183,7 @@ export default function Home() {
     } catch (err) {
       console.error('Error scanning:', err);
       setError('Noe gikk galt. Prøv igjen.');
+      analytics.scanFailed(barcode, 'error');
     } finally {
       setIsLoading(false);
     }
@@ -190,6 +196,7 @@ export default function Home() {
       name,
       checked: false
     }]);
+    analytics.shoppingListAdd(name);
   };
 
   const addProductToShoppingList = (product: ProductData) => {
@@ -298,8 +305,14 @@ export default function Home() {
         <StatsCard
           averageScore={averageScore}
           scanCount={recentScans.length}
-          onShowScoreInfo={() => setShowScoreInfo(true)}
-          onShowComparison={() => setShowComparison(true)}
+          onShowScoreInfo={() => {
+            setShowScoreInfo(true);
+            analytics.scoreInfoViewed();
+          }}
+          onShowComparison={() => {
+            setShowComparison(true);
+            analytics.comparisonStarted();
+          }}
           showCompareButton={recentScans.length >= 2}
         />
       ) : (
@@ -364,7 +377,10 @@ export default function Home() {
 
       {/* AI Chat FAB */}
       <button
-        onClick={() => setShowChat(true)}
+        onClick={() => {
+          setShowChat(true);
+          analytics.chatOpened();
+        }}
         className="fixed bottom-6 right-6 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-40"
         aria-label="Åpne AI-chat"
       >
