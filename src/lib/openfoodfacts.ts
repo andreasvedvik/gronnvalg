@@ -203,3 +203,59 @@ export async function searchAlternatives(category: string, limit: number = 5): P
     return [];
   }
 }
+
+// Search for products by name
+export async function searchProducts(query: string, limit: number = 10): Promise<ProductData[]> {
+  try {
+    if (!query || query.length < 2) return [];
+
+    // Search Norwegian database first
+    const searchUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(query)}&search_simple=1&tagtype_0=countries&tag_contains_0=contains&tag_0=norway&sort_by=unique_scans_n&page_size=${limit}&json=1`;
+
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)',
+      },
+    });
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+
+    if (data.products && data.products.length > 0) {
+      return data.products
+        .filter((p: any) => p.product_name) // Only products with names
+        .slice(0, limit)
+        .map((product: any) => {
+          const isNorwegian = isProductNorwegian(product);
+          return {
+            barcode: product.code,
+            name: product.product_name || 'Ukjent',
+            brand: product.brands || '',
+            imageUrl: product.image_small_url || product.image_url || '',
+            category: product.categories?.split(',')[0]?.trim() || '',
+            origin: product.origins || (isNorwegian ? 'Norge' : 'Ukjent'),
+            packaging: product.packaging || '',
+            labels: product.labels?.split(',').map((l: string) => l.trim()) || [],
+            ecoscore: {
+              grade: product.ecoscore_grade || 'unknown',
+              score: product.ecoscore_score || 0,
+            },
+            nutriscore: {
+              grade: product.nutriscore_grade || 'unknown',
+              score: product.nutriscore_score || 0,
+            },
+            novaGroup: product.nova_group || 0,
+            ingredients: product.ingredients_text || '',
+            isNorwegian,
+            raw: product,
+          };
+        });
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error searching products:', error);
+    return [];
+  }
+}
