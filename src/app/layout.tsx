@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import PWARegister from "@/components/PWARegister";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -16,6 +17,15 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "GrønnValg",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 
@@ -34,7 +44,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="no" className={plusJakarta.variable}>
-      <body className={`${plusJakarta.className} antialiased`}>{children}</body>
+      <body className={`${plusJakarta.className} antialiased`}>
+        <PWARegister />
+        {children}
+      </body>
     </html>
   );
 }
