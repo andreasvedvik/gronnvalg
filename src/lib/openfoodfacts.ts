@@ -112,11 +112,46 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
   }
 }
 
-// Search for alternative products
+// Helper function to check if a product is truly Norwegian (produced in Norway)
+function isProductNorwegian(product: any): boolean {
+  // Check origins field for Norwegian origin
+  const origins = (product.origins || '').toLowerCase();
+  if (origins.includes('norge') || origins.includes('norway')) {
+    return true;
+  }
+
+  // Check manufacturing places
+  const manufacturingPlaces = (product.manufacturing_places || '').toLowerCase();
+  if (manufacturingPlaces.includes('norge') || manufacturingPlaces.includes('norway')) {
+    return true;
+  }
+
+  // Check for "Nyt Norge" label (official Norwegian quality label)
+  const labels = (product.labels || '').toLowerCase();
+  if (labels.includes('nyt norge') || labels.includes('nyt-norge')) {
+    return true;
+  }
+
+  // Check brands that are known Norwegian
+  const norwegianBrands = [
+    'tine', 'gilde', 'prior', 'norvegia', 'jarlsberg', 'synnøve',
+    'mills', 'stabburet', 'idun', 'lerøy', 'maarud', 'sørlandschips',
+    'aass', 'ringnes', 'hansa', 'freia', 'nidar', 'diplom-is',
+    'kavli', 'bama', 'coop', 'first price', 'eldorado', 'jacobs'
+  ];
+  const brand = (product.brands || '').toLowerCase();
+  if (norwegianBrands.some(nb => brand.includes(nb))) {
+    return true;
+  }
+
+  return false;
+}
+
+// Search for alternative products - ONLY truly Norwegian products
 export async function searchAlternatives(category: string, limit: number = 5): Promise<ProductData[]> {
   try {
-    // Search for Norwegian products in the same category with good ecoscore
-    const searchUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(category)}&tagtype_1=countries&tag_contains_1=contains&tag_1=norway&sort_by=ecoscore_score&page_size=${limit}&json=1`;
+    // Search for products in the same category, fetch more to filter for Norwegian
+    const searchUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(category)}&tagtype_1=countries&tag_contains_1=contains&tag_1=norway&sort_by=ecoscore_score&page_size=${limit * 4}&json=1`;
 
     const response = await fetch(searchUrl, {
       headers: {
@@ -130,30 +165,36 @@ export async function searchAlternatives(category: string, limit: number = 5): P
 
     if (data.products && data.products.length > 0) {
       return data.products
+        // Only include products with known ecoscore
         .filter((p: any) => p.ecoscore_grade && p.ecoscore_grade !== 'unknown')
+        // Only include truly Norwegian products (produced in Norway)
+        .filter((p: any) => isProductNorwegian(p))
         .slice(0, limit)
-        .map((product: any) => ({
-          barcode: product.code,
-          name: product.product_name || 'Ukjent',
-          brand: product.brands || '',
-          imageUrl: product.image_small_url || '',
-          category: product.categories?.split(',')[0]?.trim() || '',
-          origin: product.origins || 'Norge',
-          packaging: product.packaging || '',
-          labels: product.labels?.split(',').map((l: string) => l.trim()) || [],
-          ecoscore: {
-            grade: product.ecoscore_grade || 'unknown',
-            score: product.ecoscore_score || 0,
-          },
-          nutriscore: {
-            grade: product.nutriscore_grade || 'unknown',
-            score: product.nutriscore_score || 0,
-          },
-          novaGroup: product.nova_group || 0,
-          ingredients: '',
-          isNorwegian: true,
-          raw: product,
-        }));
+        .map((product: any) => {
+          const isNorwegian = isProductNorwegian(product);
+          return {
+            barcode: product.code,
+            name: product.product_name || 'Ukjent',
+            brand: product.brands || '',
+            imageUrl: product.image_small_url || '',
+            category: product.categories?.split(',')[0]?.trim() || '',
+            origin: product.origins || (isNorwegian ? 'Norge' : 'Ukjent'),
+            packaging: product.packaging || '',
+            labels: product.labels?.split(',').map((l: string) => l.trim()) || [],
+            ecoscore: {
+              grade: product.ecoscore_grade || 'unknown',
+              score: product.ecoscore_score || 0,
+            },
+            nutriscore: {
+              grade: product.nutriscore_grade || 'unknown',
+              score: product.nutriscore_score || 0,
+            },
+            novaGroup: product.nova_group || 0,
+            ingredients: '',
+            isNorwegian,
+            raw: product,
+          };
+        });
     }
 
     return [];
