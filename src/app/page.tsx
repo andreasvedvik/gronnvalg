@@ -175,8 +175,10 @@ export default function Home() {
         }
         if (filters.organic) {
           alternatives = alternatives.filter(a =>
-            a.labels?.toLowerCase().includes('økologisk') ||
-            a.labels?.toLowerCase().includes('organic')
+            a.labels?.some(label =>
+                          label.toLowerCase().includes('økologisk') ||
+                          label.toLowerCase().includes('organic')
+                                     )
           );
         }
       }
