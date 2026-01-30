@@ -48,16 +48,48 @@ export function getCacheStats(): { products: number; searches: number } {
 export interface OpenFoodFactsProduct {
   code: string;
   product_name: string;
+  product_name_no?: string;
   brands: string;
   image_url: string;
   image_small_url: string;
   categories: string;
+  categories_tags?: string[];
   countries_tags: string[];
   origins: string;
+  origins_tags?: string[];
+  manufacturing_places?: string;
+  manufacturing_places_tags?: string[];
   packaging: string;
+  packaging_tags?: string[];
+  packaging_materials_tags?: string[];
+  packaging_recycling_tags?: string[];
   labels: string;
+  labels_tags?: string[];
   ecoscore_grade: string;
   ecoscore_score: number;
+  ecoscore_data?: {
+    grade?: string;
+    score?: number;
+    adjustments?: {
+      origins_of_ingredients?: {
+        origins_from_origins_field?: string[];
+        transportation_scores?: Record<string, number>;
+        value?: number;
+      };
+      packaging?: {
+        value?: number;
+        packagings?: Array<{
+          material?: string;
+          recycling?: string;
+          shape?: string;
+        }>;
+      };
+      production_system?: {
+        labels?: string[];
+        value?: number;
+      };
+    };
+  };
   nutriscore_grade: string;
   nutriscore_score: number;
   nova_group: number;
@@ -80,11 +112,20 @@ export interface ProductData {
   imageUrl: string;
   category: string;
   origin: string;
+  originTags: string[]; // NEW: structured origin tags
+  manufacturingPlaces: string; // NEW: where it's made
   packaging: string;
+  packagingTags: string[]; // NEW: structured packaging info
+  packagingMaterials: string[]; // NEW: specific materials
+  packagingRecycling: string[]; // NEW: recycling info
   labels: string[];
+  labelTags: string[]; // NEW: structured label tags
   ecoscore: {
     grade: string;
     score: number;
+    hasDetailedData: boolean; // NEW: do we have ecoscore_data?
+    transportScore?: number; // NEW: from ecoscore_data.adjustments
+    packagingScore?: number; // NEW: from ecoscore_data.adjustments
   };
   nutriscore: {
     grade: string;
@@ -126,11 +167,29 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
         const product = data.product;
 
         // Check if product is Norwegian
+        // Check if product is Norwegian (multiple sources)
         const isNorwegian =
           product.countries_tags?.includes('en:norway') ||
+          product.origins_tags?.some((t: string) => t.includes('norway') || t.includes('norge')) ||
+          product.manufacturing_places_tags?.some((t: string) => t.includes('norway') || t.includes('norge')) ||
           product.origins?.toLowerCase().includes('norge') ||
           product.origins?.toLowerCase().includes('norway') ||
-          product.labels?.toLowerCase().includes('nyt norge');
+          product.manufacturing_places?.toLowerCase().includes('norge') ||
+          product.labels?.toLowerCase().includes('nyt norge') ||
+          product.labels_tags?.includes('en:produced-in-norway');
+
+        // Extract origin info from multiple sources
+        const originSources = [
+          product.origins,
+          product.manufacturing_places,
+          ...(product.origins_tags || []).map((t: string) => t.replace('en:', '').replace('-', ' ')),
+          ...(product.manufacturing_places_tags || []).map((t: string) => t.replace('en:', '').replace('-', ' ')),
+        ].filter(Boolean);
+        const bestOrigin = originSources[0] || (isNorwegian ? 'Norge' : '');
+
+        // Extract ecoscore details if available
+        const ecoscoreData = product.ecoscore_data;
+        const hasDetailedEcoscore = !!(ecoscoreData?.adjustments);
 
         const productData: ProductData = {
           barcode: product.code,
@@ -138,12 +197,21 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
           brand: product.brands || 'Ukjent merke',
           imageUrl: product.image_url || product.image_small_url || '',
           category: product.categories?.split(',')[0]?.trim() || 'Ukjent kategori',
-          origin: product.origins || (isNorwegian ? 'Norge' : 'Ukjent'),
+          origin: bestOrigin,
+          originTags: product.origins_tags || [],
+          manufacturingPlaces: product.manufacturing_places || '',
           packaging: product.packaging || '',
+          packagingTags: product.packaging_tags || [],
+          packagingMaterials: product.packaging_materials_tags || [],
+          packagingRecycling: product.packaging_recycling_tags || [],
           labels: product.labels?.split(',').map((l: string) => l.trim()) || [],
+          labelTags: product.labels_tags || [],
           ecoscore: {
             grade: product.ecoscore_grade || 'unknown',
             score: product.ecoscore_score || 0,
+            hasDetailedData: hasDetailedEcoscore,
+            transportScore: ecoscoreData?.adjustments?.origins_of_ingredients?.value,
+            packagingScore: ecoscoreData?.adjustments?.packaging?.value,
           },
           nutriscore: {
             grade: product.nutriscore_grade || 'unknown',
@@ -310,18 +378,28 @@ export async function searchAlternatives(category: string, limit: number = 5, pr
         .slice(0, limit)
         .map((product: any) => {
           const isNorwegian = isProductNorwegian(product);
+          const ecoscoreData = product.ecoscore_data;
           return {
             barcode: product.code,
             name: product.product_name || 'Ukjent',
             brand: product.brands || '',
             imageUrl: product.image_small_url || '',
             category: product.categories?.split(',')[0]?.trim() || '',
-            origin: product.origins || (isNorwegian ? 'Norge' : 'Ukjent'),
+            origin: product.origins || (isNorwegian ? 'Norge' : ''),
+            originTags: product.origins_tags || [],
+            manufacturingPlaces: product.manufacturing_places || '',
             packaging: product.packaging || '',
+            packagingTags: product.packaging_tags || [],
+            packagingMaterials: product.packaging_materials_tags || [],
+            packagingRecycling: product.packaging_recycling_tags || [],
             labels: product.labels?.split(',').map((l: string) => l.trim()) || [],
+            labelTags: product.labels_tags || [],
             ecoscore: {
               grade: product.ecoscore_grade || 'unknown',
               score: product.ecoscore_score || 0,
+              hasDetailedData: !!(ecoscoreData?.adjustments),
+              transportScore: ecoscoreData?.adjustments?.origins_of_ingredients?.value,
+              packagingScore: ecoscoreData?.adjustments?.packaging?.value,
             },
             nutriscore: {
               grade: product.nutriscore_grade || 'unknown',
@@ -372,18 +450,28 @@ export async function searchProducts(query: string, limit: number = 10): Promise
         .slice(0, limit)
         .map((product: any) => {
           const isNorwegian = isProductNorwegian(product);
+          const ecoscoreData = product.ecoscore_data;
           return {
             barcode: product.code,
             name: product.product_name || 'Ukjent',
             brand: product.brands || '',
             imageUrl: product.image_small_url || product.image_url || '',
             category: product.categories?.split(',')[0]?.trim() || '',
-            origin: product.origins || (isNorwegian ? 'Norge' : 'Ukjent'),
+            origin: product.origins || (isNorwegian ? 'Norge' : ''),
+            originTags: product.origins_tags || [],
+            manufacturingPlaces: product.manufacturing_places || '',
             packaging: product.packaging || '',
+            packagingTags: product.packaging_tags || [],
+            packagingMaterials: product.packaging_materials_tags || [],
+            packagingRecycling: product.packaging_recycling_tags || [],
             labels: product.labels?.split(',').map((l: string) => l.trim()) || [],
+            labelTags: product.labels_tags || [],
             ecoscore: {
               grade: product.ecoscore_grade || 'unknown',
               score: product.ecoscore_score || 0,
+              hasDetailedData: !!(ecoscoreData?.adjustments),
+              transportScore: ecoscoreData?.adjustments?.origins_of_ingredients?.value,
+              packagingScore: ecoscoreData?.adjustments?.packaging?.value,
             },
             nutriscore: {
               grade: product.nutriscore_grade || 'unknown',

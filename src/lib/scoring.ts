@@ -3,21 +3,31 @@
 
 import { ProductData } from './openfoodfacts';
 
+export interface ScoreBreakdownItem {
+  score: number;
+  label: string;
+  description: string;
+  dataAvailable: boolean; // NEW: indicates if we have real data
+  confidence: 'high' | 'medium' | 'low'; // NEW: how confident are we
+}
+
 export interface GrønnScoreResult {
   total: number;
   grade: 'A' | 'B' | 'C' | 'D' | 'E';
+  dataQuality: number; // NEW: 0-100 percentage of data we actually have
   breakdown: {
-    ecoscore: { score: number; label: string; description: string };
-    transport: { score: number; label: string; description: string };
-    norwegian: { score: number; label: string; description: string };
-    packaging: { score: number; label: string; description: string };
-    certifications: { score: number; label: string; description: string };
+    ecoscore: ScoreBreakdownItem;
+    transport: ScoreBreakdownItem;
+    norwegian: ScoreBreakdownItem;
+    packaging: ScoreBreakdownItem;
+    certifications: ScoreBreakdownItem;
   };
   healthScore: {
     total: number;
     grade: 'A' | 'B' | 'C' | 'D' | 'E';
     nutriscore: string;
     nova: number;
+    dataAvailable: boolean;
   };
 }
 
@@ -39,88 +49,224 @@ const NORWEGIAN_CERTIFICATIONS = [
 const CLOSE_COUNTRIES = ['norway', 'norge', 'sweden', 'sverige', 'denmark', 'danmark', 'finland'];
 const EU_COUNTRIES = ['germany', 'france', 'netherlands', 'spain', 'italy', 'poland', 'belgium'];
 
-function getEcoscoreValue(grade: string): number {
+function getEcoscoreValue(grade: string): { score: number; available: boolean; description: string } {
+  const gradeLower = grade.toLowerCase();
   const grades: Record<string, number> = {
     'a': 100,
     'b': 80,
     'c': 60,
     'd': 40,
     'e': 20,
-    'unknown': 50,
   };
-  return grades[grade.toLowerCase()] || 50;
+
+  // Check if we have real data
+  if (grades[gradeLower] !== undefined) {
+    return {
+      score: grades[gradeLower],
+      available: true,
+      description: `Eco-Score: ${grade.toUpperCase()} (verifisert)`,
+    };
+  }
+
+  // No real data - be transparent about it
+  return {
+    score: 50, // Neutral default
+    available: false,
+    description: 'Eco-Score ikke tilgjengelig - nøytral verdi brukt',
+  };
 }
 
-function getTransportScore(origin: string, isNorwegian: boolean): { score: number; description: string } {
-  const originLower = origin.toLowerCase();
+function getTransportScore(product: ProductData): { score: number; description: string; available: boolean; source: string } {
+  // First, check if we have detailed ecoscore transport data
+  if (product.ecoscore.transportScore !== undefined) {
+    // Ecoscore transport adjustment is typically -15 to +15, convert to 0-100
+    const adjustedScore = Math.max(0, Math.min(100, 50 + (product.ecoscore.transportScore * 3)));
+    return {
+      score: Math.round(adjustedScore),
+      description: `Transport (fra Eco-Score data)`,
+      available: true,
+      source: 'ecoscore_data'
+    };
+  }
 
-  if (isNorwegian || originLower.includes('norge') || originLower.includes('norway')) {
-    return { score: 100, description: 'Norskprodusert - minimal transport' };
+  // Check multiple origin sources
+  const originSources = [
+    product.origin,
+    product.manufacturingPlaces,
+    ...product.originTags.map(t => t.replace('en:', '').replace(/-/g, ' ')),
+  ].filter(Boolean);
+
+  const allOrigins = originSources.join(' ').toLowerCase();
+
+  if (product.isNorwegian || allOrigins.includes('norge') || allOrigins.includes('norway')) {
+    return { score: 100, description: 'Norskprodusert - minimal transport', available: true, source: 'origin' };
   }
 
   for (const country of CLOSE_COUNTRIES) {
-    if (originLower.includes(country)) {
-      return { score: 80, description: 'Nærområde (Norden) - kort transport' };
+    if (allOrigins.includes(country)) {
+      const countryName = country.charAt(0).toUpperCase() + country.slice(1);
+      return { score: 80, description: `Fra ${countryName} - kort transport`, available: true, source: 'origin' };
     }
   }
 
   for (const country of EU_COUNTRIES) {
-    if (originLower.includes(country)) {
-      return { score: 50, description: 'Europa - moderat transport' };
+    if (allOrigins.includes(country)) {
+      const countryName = country.charAt(0).toUpperCase() + country.slice(1);
+      return { score: 50, description: `Fra ${countryName} (Europa) - moderat transport`, available: true, source: 'origin' };
     }
   }
 
   // Check for far-away origins
-  const farOrigins = ['peru', 'chile', 'brazil', 'argentina', 'south africa', 'australia', 'new zealand', 'china', 'india', 'thailand', 'vietnam'];
+  const farOrigins = ['peru', 'chile', 'brazil', 'brasil', 'argentina', 'south africa', 'australia', 'new zealand', 'china', 'india', 'thailand', 'vietnam', 'indonesia', 'malaysia', 'mexico', 'usa', 'united states'];
   for (const far of farOrigins) {
-    if (originLower.includes(far)) {
-      return { score: 20, description: 'Lang transport (10,000+ km)' };
+    if (allOrigins.includes(far)) {
+      const farName = far.charAt(0).toUpperCase() + far.slice(1);
+      return { score: 20, description: `Lang transport fra ${farName}`, available: true, source: 'origin' };
     }
   }
 
-  return { score: 40, description: 'Ukjent opprinnelse' };
+  // Check if we have ANY origin info at all
+  if (originSources.length > 0 && originSources[0].length > 0) {
+    return { score: 50, description: `Opprinnelse: ${originSources[0].slice(0, 25)}`, available: true, source: 'origin' };
+  }
+
+  // Unknown - be transparent
+  return { score: 50, description: 'Opprinnelse ukjent - nøytral verdi brukt', available: false, source: 'none' };
 }
 
-function getCertificationScore(labels: string[]): { score: number; found: string[] } {
+function getCertificationScore(product: ProductData): { score: number; found: string[]; source: string } {
   const found: string[] = [];
   let bonus = 0;
 
-  for (const label of labels) {
+  // Check structured label tags first (more reliable)
+  const certificationTags: Record<string, string> = {
+    'en:organic': 'Økologisk',
+    'en:eu-organic': 'EU Økologisk',
+    'en:norwegian-certified-organic': 'Debio',
+    'en:fair-trade': 'Fairtrade',
+    'en:fairtrade-international': 'Fairtrade',
+    'en:rainforest-alliance': 'Rainforest Alliance',
+    'en:msc': 'MSC (bærekraftig fiske)',
+    'en:asc': 'ASC (bærekraftig oppdrett)',
+    'en:nordic-swan': 'Svanemerket',
+    'en:produced-in-norway': 'Nyt Norge',
+    'en:nutriscore': '', // Skip nutriscore as certification
+  };
+
+  for (const tag of product.labelTags) {
+    const tagLower = tag.toLowerCase();
+    if (certificationTags[tagLower] && certificationTags[tagLower] !== '') {
+      if (!found.includes(certificationTags[tagLower])) {
+        found.push(certificationTags[tagLower]);
+        bonus += 10;
+      }
+    }
+    // Also check for partial matches in tags
+    for (const cert of NORWEGIAN_CERTIFICATIONS) {
+      if (tagLower.includes(cert.replace(' ', '-')) && !found.some(f => f.toLowerCase().includes(cert))) {
+        found.push(cert.charAt(0).toUpperCase() + cert.slice(1));
+        bonus += 10;
+      }
+    }
+  }
+
+  // Also check free-text labels
+  for (const label of product.labels) {
     const labelLower = label.toLowerCase();
     for (const cert of NORWEGIAN_CERTIFICATIONS) {
-      if (labelLower.includes(cert)) {
+      if (labelLower.includes(cert) && !found.some(f => f.toLowerCase().includes(cert))) {
         found.push(label);
         bonus += 10;
       }
     }
   }
 
+  // Determine source
+  const source = found.length > 0
+    ? (product.labelTags.length > 0 ? 'label_tags' : 'labels_text')
+    : 'none';
+
   return {
     score: Math.min(100, 50 + bonus), // Base 50, +10 per certification, max 100
-    found,
+    found: Array.from(new Set(found)), // Remove duplicates
+    source,
   };
 }
 
-function getPackagingScore(packaging: string): { score: number; description: string } {
-  const packLower = packaging.toLowerCase();
-
-  // Good packaging
-  if (packLower.includes('glass') || packLower.includes('paper') || packLower.includes('cardboard') || packLower.includes('kartong')) {
-    return { score: 90, description: 'Resirkulerbar emballasje (glass/papir)' };
+function getPackagingScore(product: ProductData): { score: number; description: string; available: boolean; source: string } {
+  // First check if we have ecoscore packaging data
+  if (product.ecoscore.packagingScore !== undefined) {
+    // Ecoscore packaging adjustment is typically -15 to +15, convert to 0-100
+    const adjustedScore = Math.max(0, Math.min(100, 50 + (product.ecoscore.packagingScore * 3)));
+    return {
+      score: Math.round(adjustedScore),
+      description: `Emballasje (fra Eco-Score data)`,
+      available: true,
+      source: 'ecoscore_data'
+    };
   }
 
-  // Recyclable plastic
-  if (packLower.includes('recyclable') || packLower.includes('resirkulerbar') || packLower.includes('pet')) {
-    return { score: 70, description: 'Resirkulerbar plast' };
+  // Check structured packaging tags (more reliable)
+  const allTags = [...product.packagingTags, ...product.packagingMaterials, ...product.packagingRecycling]
+    .map(t => t.toLowerCase().replace('en:', ''));
+  const recyclingTags = product.packagingRecycling.map(t => t.toLowerCase());
+
+  // Check for recyclable indicators
+  const isRecyclable = recyclingTags.some(t =>
+    t.includes('recycle') || t.includes('returnable') || t.includes('deposit')
+  );
+
+  // Check materials from tags
+  const hasGlass = allTags.some(t => t.includes('glass'));
+  const hasPaper = allTags.some(t => t.includes('paper') || t.includes('cardboard') || t.includes('carton'));
+  const hasMetal = allTags.some(t => t.includes('aluminium') || t.includes('steel') || t.includes('metal') || t.includes('tin'));
+  const hasPET = allTags.some(t => t.includes('pet') || t.includes('pp') || t.includes('hdpe'));
+  const hasPlastic = allTags.some(t => t.includes('plastic'));
+
+  // Return based on best material found
+  if (hasGlass) {
+    return { score: 90, description: 'Glassemballasje (resirkulerbar)', available: true, source: 'packaging_tags' };
+  }
+  if (hasPaper) {
+    return { score: 85, description: 'Papir/kartong (resirkulerbar)', available: true, source: 'packaging_tags' };
+  }
+  if (hasMetal) {
+    const metalScore = isRecyclable ? 80 : 75;
+    return { score: metalScore, description: 'Metallemballasje (resirkulerbar)', available: true, source: 'packaging_tags' };
+  }
+  if (hasPET && isRecyclable) {
+    return { score: 70, description: 'PET-plast (resirkulerbar)', available: true, source: 'packaging_tags' };
+  }
+  if (hasPlastic) {
+    const plasticScore = isRecyclable ? 55 : 40;
+    return { score: plasticScore, description: isRecyclable ? 'Plast (delvis resirkulerbar)' : 'Plastemballasje', available: true, source: 'packaging_tags' };
   }
 
-  // Generic plastic
+  // Fall back to free-text packaging field
+  const packLower = product.packaging.toLowerCase();
+  if (!product.packaging || product.packaging.trim() === '') {
+    return { score: 50, description: 'Emballasje ukjent - nøytral verdi brukt', available: false, source: 'none' };
+  }
+
+  // Parse free text
+  if (packLower.includes('glass')) {
+    return { score: 90, description: 'Glassemballasje', available: true, source: 'packaging_text' };
+  }
+  if (packLower.includes('paper') || packLower.includes('cardboard') || packLower.includes('kartong') || packLower.includes('papir')) {
+    return { score: 85, description: 'Papir/kartong', available: true, source: 'packaging_text' };
+  }
+  if (packLower.includes('can') || packLower.includes('boks') || packLower.includes('aluminium') || packLower.includes('metal')) {
+    return { score: 75, description: 'Metallemballasje', available: true, source: 'packaging_text' };
+  }
+  if (packLower.includes('pet') || packLower.includes('recyclable') || packLower.includes('resirkulerbar')) {
+    return { score: 70, description: 'Resirkulerbar plast', available: true, source: 'packaging_text' };
+  }
   if (packLower.includes('plastic') || packLower.includes('plast')) {
-    return { score: 40, description: 'Plastemballasje' };
+    return { score: 40, description: 'Plastemballasje', available: true, source: 'packaging_text' };
   }
 
-  // Mixed or unknown
-  return { score: 50, description: 'Ukjent emballasje' };
+  // Has some info but can't categorize
+  return { score: 50, description: `Emballasje: ${product.packaging.slice(0, 25)}`, available: true, source: 'packaging_text' };
 }
 
 function calculateHealthScore(product: ProductData): { total: number; grade: 'A' | 'B' | 'C' | 'D' | 'E'; nutriscore: string; nova: number } {
@@ -168,24 +314,44 @@ function calculateHealthScore(product: ProductData): { total: number; grade: 'A'
 
 export function calculateGrønnScore(product: ProductData): GrønnScoreResult {
   // 1. Base ecoscore (40% weight)
-  const ecoscoreValue = getEcoscoreValue(product.ecoscore.grade);
+  const ecoscore = getEcoscoreValue(product.ecoscore.grade);
 
-  // 2. Transport score (25% weight)
-  const transport = getTransportScore(product.origin, product.isNorwegian);
+  // 2. Transport score (25% weight) - uses multiple data sources
+  const transport = getTransportScore(product);
 
-  // 3. Norwegian bonus (15% weight)
-  const norwegianScore = product.isNorwegian ? 100 : 30;
-  const norwegianDesc = product.isNorwegian ? 'Norskprodusert!' : 'Importert produkt';
+  // 3. Norwegian indicator (15% weight)
+  // We check multiple sources for Norwegian origin
+  const norwegianKnown = product.isNorwegian ||
+    product.origin.toLowerCase().includes('norge') ||
+    product.originTags.some(t => t.includes('norway'));
+  const norwegianScore = norwegianKnown ? 100 : 30;
+  const norwegianDesc = norwegianKnown
+    ? 'Norskprodusert! 🇳🇴'
+    : transport.available
+      ? 'Ikke norskprodusert'
+      : 'Opprinnelse ukjent - antatt importert';
 
-  // 4. Packaging score (10% weight)
-  const packaging = getPackagingScore(product.packaging);
+  // 4. Packaging score (10% weight) - uses structured tags + ecoscore data
+  const packaging = getPackagingScore(product);
 
-  // 5. Certifications (10% weight)
-  const certs = getCertificationScore(product.labels);
+  // 5. Certifications (10% weight) - uses structured label tags
+  const certs = getCertificationScore(product);
+
+  // Calculate data quality (how much real data do we have?)
+  const dataPoints = [
+    { available: ecoscore.available, weight: 40 },
+    { available: transport.available, weight: 25 },
+    { available: norwegianKnown || transport.available, weight: 15 },
+    { available: packaging.available, weight: 10 },
+    { available: true, weight: 10 }, // Certifications always "available" (empty is still data)
+  ];
+  const dataQuality = Math.round(
+    dataPoints.reduce((sum, d) => sum + (d.available ? d.weight : 0), 0)
+  );
 
   // Calculate weighted total
   const total = Math.round(
-    ecoscoreValue * 0.40 +
+    ecoscore.score * 0.40 +
     transport.score * 0.25 +
     norwegianScore * 0.15 +
     packaging.score * 0.10 +
@@ -203,37 +369,57 @@ export function calculateGrønnScore(product: ProductData): GrønnScoreResult {
   // Calculate health score
   const healthScore = calculateHealthScore(product);
 
+  // Determine confidence based on data quality
+  const getConfidence = (available: boolean): 'high' | 'medium' | 'low' => {
+    if (available) return 'high';
+    return 'low';
+  };
+
   return {
     total,
     grade,
+    dataQuality,
     breakdown: {
       ecoscore: {
-        score: ecoscoreValue,
+        score: ecoscore.score,
         label: 'Miljøpåvirkning',
-        description: `Eco-Score: ${product.ecoscore.grade.toUpperCase()}`,
+        description: ecoscore.description,
+        dataAvailable: ecoscore.available,
+        confidence: getConfidence(ecoscore.available),
       },
       transport: {
         score: transport.score,
         label: 'Transport',
         description: transport.description,
+        dataAvailable: transport.available,
+        confidence: getConfidence(transport.available),
       },
       norwegian: {
         score: norwegianScore,
         label: 'Norsk',
         description: norwegianDesc,
+        dataAvailable: norwegianKnown || transport.available,
+        confidence: norwegianKnown ? 'high' : (transport.available ? 'medium' : 'low'),
       },
       packaging: {
         score: packaging.score,
         label: 'Emballasje',
         description: packaging.description,
+        dataAvailable: packaging.available,
+        confidence: getConfidence(packaging.available),
       },
       certifications: {
         score: certs.score,
         label: 'Sertifiseringer',
         description: certs.found.length > 0 ? certs.found.join(', ') : 'Ingen kjente sertifiseringer',
+        dataAvailable: true,
+        confidence: 'high',
       },
     },
-    healthScore,
+    healthScore: {
+      ...healthScore,
+      dataAvailable: product.nutriscore.grade.toLowerCase() !== 'unknown',
+    },
   };
 }
 

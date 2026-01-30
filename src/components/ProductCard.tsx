@@ -2,7 +2,7 @@
 
 import { ProductData } from '@/lib/openfoodfacts';
 import { GrønnScoreResult, getScoreColor, getScoreTextColor, getGradeEmoji } from '@/lib/scoring';
-import { X, Leaf, Heart, Truck, Package, Award, Recycle, ChevronRight, ExternalLink } from 'lucide-react';
+import { X, Leaf, Heart, Truck, Package, Award, Recycle, ChevronRight, ExternalLink, AlertCircle, HelpCircle } from 'lucide-react';
 import Image from 'next/image';
 
 interface ProductCardProps {
@@ -107,38 +107,85 @@ export default function ProductCard({ product, score, onClose, alternatives = []
 
         {/* Score Breakdown */}
         <div className="mx-4 mt-2 bg-gray-50 rounded-2xl p-4">
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            <Leaf className="w-4 h-4 text-green-600" />
-            Hvorfor denne scoren?
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+              <Leaf className="w-4 h-4 text-green-600" />
+              Hvorfor denne scoren?
+            </h3>
+            {/* Data Quality Indicator */}
+            <div className="flex items-center gap-1.5" title={`Datakvalitet: ${score.dataQuality}%`}>
+              <span className="text-xs text-gray-500">Data:</span>
+              <div className="flex gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-1.5 h-3 rounded-sm ${
+                      i < Math.ceil(score.dataQuality / 20)
+                        ? 'bg-green-500'
+                        : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-gray-500">{score.dataQuality}%</span>
+            </div>
+          </div>
           <div className="space-y-3">
             {Object.entries(score.breakdown).map(([key, data]) => (
-              <div key={key} className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+              <div key={key} className={`flex items-center gap-3 ${!data.dataAvailable ? 'opacity-70' : ''}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-sm relative ${
+                  data.dataAvailable ? 'bg-white' : 'bg-gray-100 border border-dashed border-gray-300'
+                }`}>
                   {key === 'transport' && <Truck className="w-4 h-4 text-gray-600" />}
                   {key === 'packaging' && <Package className="w-4 h-4 text-gray-600" />}
                   {key === 'ecoscore' && <Recycle className="w-4 h-4 text-gray-600" />}
                   {key === 'norwegian' && <span className="text-sm">🇳🇴</span>}
                   {key === 'certifications' && <Award className="w-4 h-4 text-gray-600" />}
+                  {!data.dataAvailable && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full flex items-center justify-center">
+                      <span className="text-[8px] text-yellow-900 font-bold">?</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-gray-600 truncate">{data.label}</span>
-                    <span className={`text-sm font-medium ${getScoreTextColor(data.score)}`}>
-                      {data.score}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm text-gray-600 truncate">{data.label}</span>
+                      {!data.dataAvailable && (
+                        <span title="Data ikke tilgjengelig - estimert verdi">
+                          <HelpCircle className="w-3 h-3 text-yellow-500" />
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-sm font-medium ${data.dataAvailable ? getScoreTextColor(data.score) : 'text-gray-400'}`}>
+                      {data.dataAvailable ? data.score : `~${data.score}`}
                     </span>
                   </div>
                   <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
                     <div
-                      className={`h-full ${getScoreColor(data.score)} rounded-full transition-all duration-500`}
+                      className={`h-full ${data.dataAvailable ? getScoreColor(data.score) : 'bg-gray-400'} rounded-full transition-all duration-500 ${
+                        !data.dataAvailable ? 'opacity-50' : ''
+                      }`}
                       style={{ width: `${data.score}%` }}
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">{data.description}</p>
+                  <p className={`text-xs mt-0.5 truncate ${data.dataAvailable ? 'text-gray-500' : 'text-yellow-600 italic'}`}>
+                    {data.description}
+                  </p>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Low data quality warning */}
+          {score.dataQuality < 50 && (
+            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-yellow-700">
+                Begrenset data tilgjengelig. Scorer merket med <span className="font-medium">~</span> er estimerte nøytrale verdier.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Health Details */}
