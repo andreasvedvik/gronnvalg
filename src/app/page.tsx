@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense, memo } from 'react';
 import { Leaf, Scan, Moon, Sun, User, ShoppingCart, MessageCircle } from 'lucide-react';
 
 // Components
@@ -14,12 +14,12 @@ import FilterBar from '@/components/FilterBar';
 import ScanHistory from '@/components/ScanHistory';
 import AppFooter from '@/components/AppFooter';
 
-// Modals
-import ScoreInfoModal from '@/components/modals/ScoreInfoModal';
-import ShoppingListModal from '@/components/modals/ShoppingListModal';
-import ComparisonModal from '@/components/modals/ComparisonModal';
-import ContactModal from '@/components/modals/ContactModal';
-import ChatModal from '@/components/modals/ChatModal';
+// Lazy load modals for better initial load performance
+const ScoreInfoModal = lazy(() => import('@/components/modals/ScoreInfoModal'));
+const ShoppingListModal = lazy(() => import('@/components/modals/ShoppingListModal'));
+const ComparisonModal = lazy(() => import('@/components/modals/ComparisonModal'));
+const ContactModal = lazy(() => import('@/components/modals/ContactModal'));
+const ChatModal = lazy(() => import('@/components/modals/ChatModal'));
 
 // Utils
 import { fetchProduct, searchAlternatives, ProductData } from '@/lib/openfoodfacts';
@@ -387,40 +387,60 @@ export default function Home() {
         <MessageCircle className="w-6 h-6" />
       </button>
 
-      {/* ===== MODALS ===== */}
-      <ScoreInfoModal
-        isOpen={showScoreInfo}
-        onClose={() => setShowScoreInfo(false)}
-      />
+      {/* ===== MODALS (Lazy loaded) ===== */}
+      {showScoreInfo && (
+        <Suspense fallback={null}>
+          <ScoreInfoModal
+            isOpen={showScoreInfo}
+            onClose={() => setShowScoreInfo(false)}
+          />
+        </Suspense>
+      )}
 
-      <ShoppingListModal
-        isOpen={showShoppingList}
-        onClose={() => setShowShoppingList(false)}
-        items={shoppingList}
-        onAddItem={addShoppingItem}
-        onToggleItem={toggleShoppingItem}
-        onRemoveItem={removeShoppingItem}
-        onClearCompleted={clearCompletedItems}
-      />
+      {showShoppingList && (
+        <Suspense fallback={null}>
+          <ShoppingListModal
+            isOpen={showShoppingList}
+            onClose={() => setShowShoppingList(false)}
+            items={shoppingList}
+            onAddItem={addShoppingItem}
+            onToggleItem={toggleShoppingItem}
+            onRemoveItem={removeShoppingItem}
+            onClearCompleted={clearCompletedItems}
+          />
+        </Suspense>
+      )}
 
-      <ComparisonModal
-        isOpen={showComparison}
-        onClose={() => setShowComparison(false)}
-        compareProducts={compareProducts}
-        recentScans={recentScans}
-        onAddToComparison={addToComparison}
-        onRemoveFromComparison={removeFromComparison}
-      />
+      {showComparison && (
+        <Suspense fallback={null}>
+          <ComparisonModal
+            isOpen={showComparison}
+            onClose={() => setShowComparison(false)}
+            compareProducts={compareProducts}
+            recentScans={recentScans}
+            onAddToComparison={addToComparison}
+            onRemoveFromComparison={removeFromComparison}
+          />
+        </Suspense>
+      )}
 
-      <ContactModal
-        isOpen={showContact}
-        onClose={() => setShowContact(false)}
-      />
+      {showContact && (
+        <Suspense fallback={null}>
+          <ContactModal
+            isOpen={showContact}
+            onClose={() => setShowContact(false)}
+          />
+        </Suspense>
+      )}
 
-      <ChatModal
-        isOpen={showChat}
-        onClose={() => setShowChat(false)}
-      />
+      {showChat && (
+        <Suspense fallback={null}>
+          <ChatModal
+            isOpen={showChat}
+            onClose={() => setShowChat(false)}
+          />
+        </Suspense>
+      )}
 
       {/* Scanner Modal */}
       {showScanner && (

@@ -1,5 +1,50 @@
 // Open Food Facts API Integration
 
+// ===== CACHING =====
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const productCache = new Map<string, CacheEntry<ProductData | null>>();
+const searchCache = new Map<string, CacheEntry<ProductData[]>>();
+
+function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | undefined {
+  const entry = cache.get(key);
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL) {
+    return entry.data;
+  }
+  if (entry) {
+    cache.delete(key); // Remove expired entry
+  }
+  return undefined;
+}
+
+function setCache<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T): void {
+  // Limit cache size to prevent memory issues
+  if (cache.size > 100) {
+    // Remove oldest entries
+    const keysToDelete = Array.from(cache.keys()).slice(0, 20);
+    keysToDelete.forEach(k => cache.delete(k));
+  }
+  cache.set(key, { data, timestamp: Date.now() });
+}
+
+// Export for debugging/clearing
+export function clearProductCache(): void {
+  productCache.clear();
+  searchCache.clear();
+}
+
+export function getCacheStats(): { products: number; searches: number } {
+  return {
+    products: productCache.size,
+    searches: searchCache.size,
+  };
+}
+// ===== END CACHING =====
+
 export interface OpenFoodFactsProduct {
   code: string;
   product_name: string;
@@ -52,6 +97,13 @@ export interface ProductData {
 }
 
 export async function fetchProduct(barcode: string): Promise<ProductData | null> {
+  // Check cache first
+  const cached = getCached(productCache, barcode);
+  if (cached !== undefined) {
+    console.log('📦 Cache hit for product:', barcode);
+    return cached;
+  }
+
   try {
     // Try Norwegian database first, then world database
     const urls = [
@@ -80,7 +132,7 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
           product.origins?.toLowerCase().includes('norway') ||
           product.labels?.toLowerCase().includes('nyt norge');
 
-        return {
+        const productData: ProductData = {
           barcode: product.code,
           name: product.product_name || product.product_name_no || 'Ukjent produkt',
           brand: product.brands || 'Ukjent merke',
@@ -102,9 +154,15 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
           isNorwegian,
           raw: product,
         };
+
+        // Cache the result
+        setCache(productCache, barcode, productData);
+        return productData;
       }
     }
 
+    // Cache the null result too (product not found)
+    setCache(productCache, barcode, null);
     return null;
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -149,6 +207,13 @@ function isProductNorwegian(product: any): boolean {
 
 // Search for alternative products - ONLY truly Norwegian products
 export async function searchAlternatives(category: string, limit: number = 5): Promise<ProductData[]> {
+  const cacheKey = `alt:${category}:${limit}`;
+  const cached = getCached(searchCache, cacheKey);
+  if (cached !== undefined) {
+    console.log('📦 Cache hit for alternatives:', category);
+    return cached;
+  }
+
   try {
     // Search for products in the same category, fetch more to filter for Norwegian
     const searchUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(category)}&tagtype_1=countries&tag_contains_1=contains&tag_1=norway&sort_by=ecoscore_score&page_size=${limit * 4}&json=1`;
@@ -164,7 +229,7 @@ export async function searchAlternatives(category: string, limit: number = 5): P
     const data = await response.json();
 
     if (data.products && data.products.length > 0) {
-      return data.products
+      const results = data.products
         // Only include products with known ecoscore
         .filter((p: any) => p.ecoscore_grade && p.ecoscore_grade !== 'unknown')
         // Only include truly Norwegian products (produced in Norway)
@@ -195,8 +260,14 @@ export async function searchAlternatives(category: string, limit: number = 5): P
             raw: product,
           };
         });
+
+      // Cache the results
+      setCache(searchCache, cacheKey, results);
+      return results;
     }
 
+    // Cache empty result
+    setCache(searchCache, cacheKey, []);
     return [];
   } catch (error) {
     console.error('Error searching alternatives:', error);
