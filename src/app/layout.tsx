@@ -9,42 +9,6 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "GrÃ¸nnValg - Velg grÃ¸nnere, lev bedre",
-  description: "Skann produkter og se bÃ¦rekraft-score. Finn norske alternativer.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "GrÃ¸nnValg",
-  },
-};
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: "#22c55e",
-};
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <html lang="no" className={plusJakarta.variable}>
-      <body className={`${plusJakarta.className} antialiased`}>{children}</body>
-    </html>
-  );
-}
-import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
   title: "GrønnValg - Velg grønnere, lev bedre",
   description: "Skann produkter og se bærekraft-score. Finn norske alternativer.",
   manifest: "/manifest.json",
@@ -69,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="no">
-      <body className={inter.className}>{children}</body>
+    <html lang="no" className={plusJakarta.variable}>
+      <body className={`${plusJakarta.className} antialiased`}>{children}</body>
     </html>
   );
 }
