@@ -65,6 +65,13 @@ export interface OpenFoodFactsProduct {
   packaging_recycling_tags?: string[];
   labels: string;
   labels_tags?: string[];
+  // Allergen fields
+  allergens?: string;
+  allergens_tags?: string[];
+  allergens_hierarchy?: string[];
+  traces?: string;
+  traces_tags?: string[];
+  traces_hierarchy?: string[];
   ecoscore_grade: string;
   ecoscore_score: number;
   ecoscore_data?: {
@@ -105,6 +112,14 @@ export interface OpenFoodFactsProduct {
   };
 }
 
+// Allergen info structure
+export interface AllergenInfo {
+  allergens: string[];       // Confirmed allergens
+  traces: string[];          // May contain traces of
+  hasAllergens: boolean;     // Quick check if any allergens
+  hasTraces: boolean;        // Quick check if any traces
+}
+
 export interface ProductData {
   barcode: string;
   name: string;
@@ -112,20 +127,22 @@ export interface ProductData {
   imageUrl: string;
   category: string;
   origin: string;
-  originTags: string[]; // NEW: structured origin tags
-  manufacturingPlaces: string; // NEW: where it's made
+  originTags: string[]; // Structured origin tags
+  manufacturingPlaces: string; // Where it's made
   packaging: string;
-  packagingTags: string[]; // NEW: structured packaging info
-  packagingMaterials: string[]; // NEW: specific materials
-  packagingRecycling: string[]; // NEW: recycling info
+  packagingTags: string[]; // Structured packaging info
+  packagingMaterials: string[]; // Specific materials
+  packagingRecycling: string[]; // Recycling info
   labels: string[];
-  labelTags: string[]; // NEW: structured label tags
+  labelTags: string[]; // Structured label tags
+  // Allergen information
+  allergenInfo: AllergenInfo;
   ecoscore: {
     grade: string;
     score: number;
-    hasDetailedData: boolean; // NEW: do we have ecoscore_data?
-    transportScore?: number; // NEW: from ecoscore_data.adjustments
-    packagingScore?: number; // NEW: from ecoscore_data.adjustments
+    hasDetailedData: boolean; // Do we have ecoscore_data?
+    transportScore?: number; // From ecoscore_data.adjustments
+    packagingScore?: number; // From ecoscore_data.adjustments
   };
   nutriscore: {
     grade: string;
@@ -135,6 +152,51 @@ export interface ProductData {
   ingredients: string;
   isNorwegian: boolean;
   raw: OpenFoodFactsProduct;
+}
+
+// Parse allergen tags to readable names
+function parseAllergenTags(tags: string[] | undefined): string[] {
+  if (!tags || tags.length === 0) return [];
+
+  // Mapping of allergen tags to Norwegian names
+  const allergenNames: Record<string, string> = {
+    'en:gluten': 'Gluten',
+    'en:milk': 'Melk',
+    'en:eggs': 'Egg',
+    'en:nuts': 'Nøtter',
+    'en:peanuts': 'Peanøtter',
+    'en:soybeans': 'Soya',
+    'en:celery': 'Selleri',
+    'en:mustard': 'Sennep',
+    'en:sesame-seeds': 'Sesamfrø',
+    'en:sulphur-dioxide-and-sulphites': 'Sulfitt',
+    'en:lupin': 'Lupin',
+    'en:molluscs': 'Bløtdyr',
+    'en:crustaceans': 'Skalldyr',
+    'en:fish': 'Fisk',
+    'en:wheat': 'Hvete',
+    'en:barley': 'Bygg',
+    'en:oats': 'Havre',
+    'en:rye': 'Rug',
+    'en:spelt': 'Spelt',
+    'en:almonds': 'Mandler',
+    'en:hazelnuts': 'Hasselnøtter',
+    'en:walnuts': 'Valnøtter',
+    'en:cashews': 'Cashewnøtter',
+    'en:pecans': 'Pekannøtter',
+    'en:brazil-nuts': 'Paranøtter',
+    'en:pistachios': 'Pistasj',
+    'en:macadamia-nuts': 'Macadamianøtter',
+  };
+
+  return tags.map(tag => {
+    // Try to get Norwegian name, otherwise clean up the tag
+    if (allergenNames[tag]) {
+      return allergenNames[tag];
+    }
+    // Clean up tag: remove 'en:' prefix and format
+    return tag.replace('en:', '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  });
 }
 
 export async function fetchProduct(barcode: string): Promise<ProductData | null> {
@@ -191,6 +253,10 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
         const ecoscoreData = product.ecoscore_data;
         const hasDetailedEcoscore = !!(ecoscoreData?.adjustments);
 
+        // Extract allergen info
+        const allergens = parseAllergenTags(product.allergens_tags);
+        const traces = parseAllergenTags(product.traces_tags);
+
         const productData: ProductData = {
           barcode: product.code,
           name: product.product_name || product.product_name_no || 'Ukjent produkt',
@@ -206,6 +272,12 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
           packagingRecycling: product.packaging_recycling_tags || [],
           labels: product.labels?.split(',').map((l: string) => l.trim()) || [],
           labelTags: product.labels_tags || [],
+          allergenInfo: {
+            allergens,
+            traces,
+            hasAllergens: allergens.length > 0,
+            hasTraces: traces.length > 0,
+          },
           ecoscore: {
             grade: product.ecoscore_grade || 'unknown',
             score: product.ecoscore_score || 0,
@@ -379,6 +451,8 @@ export async function searchAlternatives(category: string, limit: number = 5, pr
         .map((product: any) => {
           const isNorwegian = isProductNorwegian(product);
           const ecoscoreData = product.ecoscore_data;
+          const allergens = parseAllergenTags(product.allergens_tags);
+          const traces = parseAllergenTags(product.traces_tags);
           return {
             barcode: product.code,
             name: product.product_name || 'Ukjent',
@@ -394,6 +468,12 @@ export async function searchAlternatives(category: string, limit: number = 5, pr
             packagingRecycling: product.packaging_recycling_tags || [],
             labels: product.labels?.split(',').map((l: string) => l.trim()) || [],
             labelTags: product.labels_tags || [],
+            allergenInfo: {
+              allergens,
+              traces,
+              hasAllergens: allergens.length > 0,
+              hasTraces: traces.length > 0,
+            },
             ecoscore: {
               grade: product.ecoscore_grade || 'unknown',
               score: product.ecoscore_score || 0,
@@ -451,6 +531,8 @@ export async function searchProducts(query: string, limit: number = 10): Promise
         .map((product: any) => {
           const isNorwegian = isProductNorwegian(product);
           const ecoscoreData = product.ecoscore_data;
+          const allergens = parseAllergenTags(product.allergens_tags);
+          const traces = parseAllergenTags(product.traces_tags);
           return {
             barcode: product.code,
             name: product.product_name || 'Ukjent',
@@ -466,6 +548,12 @@ export async function searchProducts(query: string, limit: number = 10): Promise
             packagingRecycling: product.packaging_recycling_tags || [],
             labels: product.labels?.split(',').map((l: string) => l.trim()) || [],
             labelTags: product.labels_tags || [],
+            allergenInfo: {
+              allergens,
+              traces,
+              hasAllergens: allergens.length > 0,
+              hasTraces: traces.length > 0,
+            },
             ecoscore: {
               grade: product.ecoscore_grade || 'unknown',
               score: product.ecoscore_score || 0,
@@ -492,49 +580,60 @@ export async function searchProducts(query: string, limit: number = 10): Promise
   }
 }
 
-// Search for similar products (always returns results, not just "better" alternatives)
+// Search for similar products - KUN NORSKE PRODUKTER
+// Denne appen er laget for norske forbrukere, så vi viser kun norske produkter
 export async function searchSimilarProducts(
   product: ProductData,
-  limit: number = 6
-): Promise<{ norwegian: ProductData[]; other: ProductData[] }> {
+  limit: number = 8
+): Promise<ProductData[]> {
   const searchCategory = getBestSearchCategory(product.name, product.category);
-  const cacheKey = `similar:${searchCategory}:${limit}`;
+  const cacheKey = `similar-no:${searchCategory}:${limit}`;
+
+  // Check cache first
+  const cached = getCached(searchCache, cacheKey);
+  if (cached !== undefined) {
+    console.log('📦 Cache hit for similar products:', searchCategory);
+    return cached;
+  }
 
   try {
-    console.log('🔍 Searching similar products for:', product.name, '-> category:', searchCategory);
+    console.log('🔍 Søker etter lignende norske produkter for:', product.name, '-> kategori:', searchCategory);
 
-    // Search for products in the same category (not restricted to Norway)
-    const searchUrl = `https://world.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(searchCategory)}&sort_by=unique_scans_n&page_size=${limit * 3}&json=1`;
+    // Søk KUN i norsk database med Norway-filter
+    const norwegianUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(searchCategory)}&tagtype_1=countries&tag_contains_1=contains&tag_1=norway&sort_by=unique_scans_n&page_size=${limit * 4}&json=1`;
 
-    const response = await fetch(searchUrl, {
+    const response = await fetch(norwegianUrl, {
       headers: {
         'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)',
       },
     });
 
     if (!response.ok) {
-      return { norwegian: [], other: [] };
+      return [];
     }
 
     const data = await response.json();
 
     if (!data.products || data.products.length === 0) {
-      // Fallback: search by product name keywords
-      return await searchByNameKeywords(product.name, product.barcode, limit);
+      // Fallback: search by product name keywords (only Norwegian)
+      return await searchByNameKeywordsNorwegian(product.name, product.barcode, limit);
     }
 
-    const allProducts = data.products
+    const norwegianProducts = data.products
       .filter((p: any) => p.product_name && p.code !== product.barcode) // Exclude the scanned product
+      .filter((p: any) => isProductNorwegian(p)) // KUN norske produkter
+      .slice(0, limit)
       .map((p: any) => {
-        const isNorwegian = isProductNorwegian(p);
         const ecoscoreData = p.ecoscore_data;
+        const allergens = parseAllergenTags(p.allergens_tags);
+        const traces = parseAllergenTags(p.traces_tags);
         return {
           barcode: p.code,
           name: p.product_name || 'Ukjent',
           brand: p.brands || '',
           imageUrl: p.image_small_url || p.image_url || '',
           category: p.categories?.split(',')[0]?.trim() || '',
-          origin: p.origins || (isNorwegian ? 'Norge' : ''),
+          origin: p.origins || 'Norge',
           originTags: p.origins_tags || [],
           manufacturingPlaces: p.manufacturing_places || '',
           packaging: p.packaging || '',
@@ -543,6 +642,12 @@ export async function searchSimilarProducts(
           packagingRecycling: p.packaging_recycling_tags || [],
           labels: p.labels?.split(',').map((l: string) => l.trim()) || [],
           labelTags: p.labels_tags || [],
+          allergenInfo: {
+            allergens,
+            traces,
+            hasAllergens: allergens.length > 0,
+            hasTraces: traces.length > 0,
+          },
           ecoscore: {
             grade: p.ecoscore_grade || 'unknown',
             score: p.ecoscore_score || 0,
@@ -556,30 +661,28 @@ export async function searchSimilarProducts(
           },
           novaGroup: p.nova_group || 0,
           ingredients: '',
-          isNorwegian,
+          isNorwegian: true,
           raw: p,
         } as ProductData;
       });
 
-    // Split into Norwegian and other products
-    const norwegian = allProducts.filter((p: ProductData) => p.isNorwegian).slice(0, Math.ceil(limit / 2));
-    const other = allProducts.filter((p: ProductData) => !p.isNorwegian).slice(0, Math.ceil(limit / 2));
+    console.log(`✅ Fant ${norwegianProducts.length} lignende norske produkter`);
 
-    console.log(`✅ Found ${norwegian.length} Norwegian + ${other.length} other similar products`);
-
-    return { norwegian, other };
+    // Cache results
+    setCache(searchCache, cacheKey, norwegianProducts);
+    return norwegianProducts;
   } catch (error) {
     console.error('Error searching similar products:', error);
-    return { norwegian: [], other: [] };
+    return [];
   }
 }
 
-// Fallback search by product name keywords
-async function searchByNameKeywords(
+// Fallback search by product name keywords - KUN NORSKE PRODUKTER
+async function searchByNameKeywordsNorwegian(
   productName: string,
   excludeBarcode: string,
   limit: number
-): Promise<{ norwegian: ProductData[]; other: ProductData[] }> {
+): Promise<ProductData[]> {
   try {
     // Extract meaningful keywords from product name
     const keywords = productName
@@ -590,10 +693,11 @@ async function searchByNameKeywords(
       .join(' ');
 
     if (!keywords) {
-      return { norwegian: [], other: [] };
+      return [];
     }
 
-    const searchUrl = `https://world.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(keywords)}&sort_by=unique_scans_n&page_size=${limit * 2}&json=1`;
+    // Søk i norsk database med Norway-filter
+    const searchUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(keywords)}&tagtype_0=countries&tag_contains_0=contains&tag_0=norway&sort_by=unique_scans_n&page_size=${limit * 3}&json=1`;
 
     const response = await fetch(searchUrl, {
       headers: {
@@ -602,27 +706,30 @@ async function searchByNameKeywords(
     });
 
     if (!response.ok) {
-      return { norwegian: [], other: [] };
+      return [];
     }
 
     const data = await response.json();
 
     if (!data.products) {
-      return { norwegian: [], other: [] };
+      return [];
     }
 
-    const allProducts = data.products
+    const norwegianProducts = data.products
       .filter((p: any) => p.product_name && p.code !== excludeBarcode)
+      .filter((p: any) => isProductNorwegian(p)) // KUN norske produkter
+      .slice(0, limit)
       .map((p: any) => {
-        const isNorwegian = isProductNorwegian(p);
         const ecoscoreData = p.ecoscore_data;
+        const allergens = parseAllergenTags(p.allergens_tags);
+        const traces = parseAllergenTags(p.traces_tags);
         return {
           barcode: p.code,
           name: p.product_name || 'Ukjent',
           brand: p.brands || '',
           imageUrl: p.image_small_url || p.image_url || '',
           category: p.categories?.split(',')[0]?.trim() || '',
-          origin: p.origins || (isNorwegian ? 'Norge' : ''),
+          origin: p.origins || 'Norge',
           originTags: p.origins_tags || [],
           manufacturingPlaces: p.manufacturing_places || '',
           packaging: p.packaging || '',
@@ -631,6 +738,12 @@ async function searchByNameKeywords(
           packagingRecycling: p.packaging_recycling_tags || [],
           labels: p.labels?.split(',').map((l: string) => l.trim()) || [],
           labelTags: p.labels_tags || [],
+          allergenInfo: {
+            allergens,
+            traces,
+            hasAllergens: allergens.length > 0,
+            hasTraces: traces.length > 0,
+          },
           ecoscore: {
             grade: p.ecoscore_grade || 'unknown',
             score: p.ecoscore_score || 0,
@@ -644,17 +757,14 @@ async function searchByNameKeywords(
           },
           novaGroup: p.nova_group || 0,
           ingredients: '',
-          isNorwegian,
+          isNorwegian: true,
           raw: p,
         } as ProductData;
       });
 
-    const norwegian = allProducts.filter((p: ProductData) => p.isNorwegian).slice(0, Math.ceil(limit / 2));
-    const other = allProducts.filter((p: ProductData) => !p.isNorwegian).slice(0, Math.ceil(limit / 2));
-
-    return { norwegian, other };
+    return norwegianProducts;
   } catch (error) {
     console.error('Error in keyword search:', error);
-    return { norwegian: [], other: [] };
+    return [];
   }
 }

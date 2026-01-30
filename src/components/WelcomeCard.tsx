@@ -1,8 +1,11 @@
 'use client';
 
 import { Leaf } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n';
 
 export default function WelcomeCard() {
+  const { t } = useLanguage();
+
   return (
     <div className="mx-6 mb-6 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-soft border border-gray-100 dark:border-gray-700 animate-fade-in-up stagger-2">
       <div className="text-center">
@@ -10,10 +13,10 @@ export default function WelcomeCard() {
           <Leaf className="w-8 h-8 text-green-500" strokeWidth={2} />
         </div>
         <h2 className="text-title text-gray-900 dark:text-white mb-2">
-          Velkommen til GrønnValg!
+          {t.welcomeTitle}
         </h2>
         <p className="text-body text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
-          Skann produkter for å se bærekraft-score og finne grønnere norske alternativer.
+          {t.welcomeDescription}
         </p>
       </div>
     </div>

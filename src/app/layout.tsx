@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import PWARegister from "@/components/PWARegister";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import Providers from "@/components/Providers";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -47,8 +48,10 @@ export default function RootLayout({
     <html lang="no" className={plusJakarta.variable}>
       <body className={`${plusJakarta.className} antialiased`}>
         <ErrorBoundary>
-          <PWARegister />
-          {children}
+          <Providers>
+            <PWARegister />
+            {children}
+          </Providers>
         </ErrorBoundary>
       </body>
     </html>

@@ -148,6 +148,12 @@ function convertKassalappToProductData(kp: KassalappProduct): ProductData {
     novaGroup: 0,
     ingredients: kp.ingredients || '',
     isNorwegian,
+    allergenInfo: {
+      allergens: [],
+      traces: [],
+      hasAllergens: false,
+      hasTraces: false,
+    },
     raw: kp as any,
   };
 }

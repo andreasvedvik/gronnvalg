@@ -13,6 +13,10 @@ import TrustSignals from '@/components/TrustSignals';
 import FilterBar from '@/components/FilterBar';
 import ScanHistory from '@/components/ScanHistory';
 import AppFooter from '@/components/AppFooter';
+import LanguageSelector from '@/components/LanguageSelector';
+
+// i18n
+import { useLanguage } from '@/lib/i18n';
 
 // Lazy load modals for better initial load performance
 const ScoreInfoModal = lazy(() => import('@/components/modals/ScoreInfoModal'));
@@ -27,16 +31,11 @@ import { calculateGrønnScore, GrønnScoreResult } from '@/lib/scoring';
 import analytics from '@/lib/analytics';
 
 // Types
-interface SimilarProducts {
-  norwegian: ProductData[];
-  other: ProductData[];
-}
-
 interface ScanResult {
   product: ProductData;
   score: GrønnScoreResult;
   alternatives: ProductData[];
-  similarProducts?: SimilarProducts;
+  similarProducts?: ProductData[]; // KUN norske produkter
   timestamp?: number;
 }
 
@@ -45,6 +44,7 @@ interface ShoppingItem {
   name: string;
   checked: boolean;
   barcode?: string;
+  imageUrl?: string;
 }
 
 interface Filters {
@@ -53,6 +53,9 @@ interface Filters {
 }
 
 export default function Home() {
+  // i18n
+  const { t } = useLanguage();
+
   // Core state
   const [showScanner, setShowScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -147,7 +150,7 @@ export default function Home() {
       const product = await fetchProduct(barcode);
 
       if (!product) {
-        setError(`Produktet med strekkode ${barcode} ble ikke funnet. Prøv et annet produkt.`);
+        setError(`${t.productNotFound}: ${barcode}. ${t.tryAnotherProduct}.`);
         analytics.scanFailed(barcode, 'not_found');
         setIsLoading(false);
         return;
@@ -156,19 +159,20 @@ export default function Home() {
       const score = calculateGrønnScore(product);
 
       // Fetch both alternatives and similar products in parallel
+      // Begge gir nå kun norske produkter
       let alternatives: ProductData[] = [];
-      let similarProducts: SimilarProducts = { norwegian: [], other: [] };
+      let similarProducts: ProductData[] = [];
 
-      // Always search for similar products
+      // Alltid søk etter lignende norske produkter
       const [altResult, similarResult] = await Promise.all([
         product.category
           ? searchAlternatives(product.raw?.categories || product.category, 5, product.name)
           : Promise.resolve([]),
-        searchSimilarProducts(product, 6),
+        searchSimilarProducts(product, 8),
       ]);
 
       alternatives = altResult.filter((a) => a.barcode !== product.barcode);
-      similarProducts = similarResult;
+      similarProducts = similarResult.filter((p) => p.barcode !== product.barcode);
 
       // Apply filters to alternatives
       if (filters.norwegianOnly) {
@@ -197,7 +201,7 @@ export default function Home() {
       });
     } catch (err) {
       console.error('Error scanning:', err);
-      setError('Noe gikk galt. Prøv igjen.');
+      setError(`${t.somethingWentWrong}. ${t.tryAgain}.`);
       analytics.scanFailed(barcode, 'error');
     } finally {
       setIsLoading(false);
@@ -205,22 +209,19 @@ export default function Home() {
   };
 
   // Shopping list handlers
-  const addShoppingItem = (name: string) => {
+  const addShoppingItem = (name: string, barcode?: string, imageUrl?: string) => {
     setShoppingList(prev => [...prev, {
       id: Date.now().toString(),
       name,
-      checked: false
+      checked: false,
+      barcode,
+      imageUrl
     }]);
     analytics.shoppingListAdd(name);
   };
 
   const addProductToShoppingList = (product: ProductData) => {
-    setShoppingList(prev => [...prev, {
-      id: Date.now().toString(),
-      name: product.name,
-      checked: false,
-      barcode: product.barcode
-    }]);
+    addShoppingItem(product.name, product.barcode, product.imageUrl);
   };
 
   const toggleShoppingItem = (id: string) => {
@@ -250,7 +251,7 @@ export default function Home() {
 
   // Clear history
   const clearHistory = () => {
-    if (confirm('Er du sikker på at du vil slette all historikk?')) {
+    if (confirm(t.confirmClearHistory)) {
       setRecentScans([]);
       localStorage.removeItem('gronnvalg-history');
     }
@@ -268,18 +269,21 @@ export default function Home() {
         <div className="flex items-center justify-between animate-fade-in-up stagger-1">
           <div>
             <h1 className="text-display text-gray-900 dark:text-white flex items-center gap-2">
-              GrønnValg
+              {t.appName}
               <Leaf className="w-7 h-7 text-green-500" strokeWidth={2.5} />
             </h1>
             <p className="text-caption text-gray-500 dark:text-gray-400 mt-0.5">
-              Velg grønnere, lev bedre
+              {t.appTagline}
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Language Selector */}
+            <LanguageSelector />
+
             <button
               onClick={toggleDarkMode}
               className="w-11 h-11 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
-              aria-label={darkMode ? 'Bytt til lyst tema' : 'Bytt til mørkt tema'}
+              aria-label={darkMode ? t.lightMode : t.darkMode}
             >
               {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-600" />}
             </button>
@@ -287,7 +291,7 @@ export default function Home() {
             <button
               onClick={() => setShowShoppingList(true)}
               className="relative w-11 h-11 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
-              aria-label="Handleliste"
+              aria-label={t.shoppingList}
             >
               <ShoppingCart className="w-5 h-5 text-green-600 dark:text-green-400" />
               {shoppingList.filter(i => !i.checked).length > 0 && (
@@ -299,7 +303,7 @@ export default function Home() {
 
             <button
               className="w-11 h-11 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
-              aria-label="Profil"
+              aria-label={t.profile}
             >
               <User className="w-5 h-5 text-green-600 dark:text-green-400" />
             </button>
@@ -341,7 +345,7 @@ export default function Home() {
           <button
             onClick={() => setShowScanner(true)}
             className="relative scan-button animate-breathe w-44 h-44 rounded-full flex flex-col items-center justify-center"
-            aria-label="Skann produkt"
+            aria-label={t.scanProduct}
           >
             <div className="absolute inset-6 border-2 border-white/30 rounded-lg">
               <div className="absolute -top-0.5 -left-0.5 w-5 h-5 border-t-[3px] border-l-[3px] border-white rounded-tl-md" />
@@ -350,11 +354,11 @@ export default function Home() {
               <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 border-b-[3px] border-r-[3px] border-white rounded-br-md" />
             </div>
             <Scan className="w-14 h-14 text-white mb-2" strokeWidth={1.5} />
-            <span className="text-white font-semibold text-lg">Skann produkt</span>
+            <span className="text-white font-semibold text-lg">{t.scanProduct}</span>
           </button>
         </div>
         <p className="text-base font-medium text-gray-500 dark:text-gray-400 mt-6">
-          Trykk for å skanne en strekkode
+          {t.tapToScan}
         </p>
       </div>
 
@@ -366,7 +370,7 @@ export default function Home() {
             onClick={() => setError(null)}
             className="mt-2 text-red-600 dark:text-red-400 text-sm font-semibold hover:underline"
           >
-            Lukk
+            {t.close}
           </button>
         </div>
       )}
@@ -397,7 +401,7 @@ export default function Home() {
           analytics.chatOpened();
         }}
         className="fixed bottom-6 right-6 w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-40"
-        aria-label="Åpne AI-chat"
+        aria-label={t.aiAssistant}
       >
         <MessageCircle className="w-6 h-6" />
       </button>
