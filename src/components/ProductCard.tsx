@@ -70,7 +70,7 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                   </span>
                 </div>
 
-                {/* HelseScore */}
+                {/* Næringsinfo */}
                 <div className="flex-1 text-center">
                   <div
                     className={`w-16 h-16 mx-auto ${getScoreColor(score.healthScore.total)} rounded-2xl flex items-center justify-center mb-1 shadow-md`}
@@ -79,7 +79,7 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                   </div>
                   <div className="flex items-center justify-center gap-1">
                     <Heart className="w-3 h-3 text-red-500" />
-                    <span className="text-xs font-medium text-gray-600">HelseScore</span>
+                    <span className="text-xs font-medium text-gray-600">Næringsinfo</span>
                   </div>
                   <span className={`text-lg font-bold ${getScoreTextColor(score.healthScore.total)}`}>
                     {score.healthScore.total}/100

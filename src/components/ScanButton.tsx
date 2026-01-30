@@ -18,7 +18,7 @@ export default function ScanButton({ onClick }: ScanButtonProps) {
         </div>
         <div className="text-center">
           <p className="text-xl font-semibold text-gray-800">Skann et produkt</p>
-          <p className="text-gray-500 mt-1">Se helse- og miljøscore</p>
+          <p className="text-gray-500 mt-1">Se bærekraft- og næringsinfo</p>
         </div>
       </div>
     </button>
