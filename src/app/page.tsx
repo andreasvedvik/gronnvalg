@@ -113,8 +113,8 @@ export default function Home() {
     if (savedHistory) {
       try {
         setRecentScans(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error('Failed to load history:', e);
+      } catch {
+        // Failed to parse history from localStorage
       }
     }
 
@@ -123,8 +123,8 @@ export default function Home() {
     if (savedShoppingList) {
       try {
         setShoppingList(JSON.parse(savedShoppingList));
-      } catch (e) {
-        console.error('Failed to load shopping list:', e);
+      } catch {
+        // Failed to parse shopping list from localStorage
       }
     }
 
@@ -205,8 +205,7 @@ export default function Home() {
       // Load extras in background (non-blocking)
       setIsLoadingExtras(true);
       loadProductExtras(product, barcode, initialResult);
-    } catch (err) {
-      console.error('Error scanning:', err);
+    } catch {
       setError(`${t.somethingWentWrong}. ${t.tryAgain}.`);
       analytics.scanFailed(barcode, 'error');
       setIsLoading(false);

@@ -56,7 +56,6 @@ export async function fetchAllFoods(): Promise<Matvare[]> {
   try {
     const response = await fetch(`${API_BASE}/nb/foods.json`);
     if (!response.ok) {
-      console.error('Matvaretabellen foods API error:', response.status);
       return [];
     }
     const data = await response.json();
@@ -71,8 +70,7 @@ export async function fetchAllFoods(): Promise<Matvare[]> {
     }
 
     return data;
-  } catch (error) {
-    console.error('Matvaretabellen fetch error:', error);
+  } catch {
     return [];
   }
 }
@@ -92,8 +90,7 @@ export async function fetchFoodGroups(): Promise<MatvareGroup[]> {
     foodGroupsCache.push(...data);
     lastFetchTime = Date.now();
     return data;
-  } catch (error) {
-    console.error('Matvaretabellen groups error:', error);
+  } catch {
     return [];
   }
 }
@@ -112,8 +109,7 @@ export async function fetchNutrients(): Promise<NutrientDefinition[]> {
     const data = await response.json();
     nutrientsCache.push(...data);
     return data;
-  } catch (error) {
-    console.error('Matvaretabellen nutrients error:', error);
+  } catch {
     return [];
   }
 }

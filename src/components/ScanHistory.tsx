@@ -20,6 +20,8 @@ interface ScanHistoryItemProps {
   onAddToShoppingList: () => void;
   onAddToComparison: () => void;
   compareDisabled: boolean;
+  addToListLabel: string;
+  compareLabel: string;
 }
 
 // Memoized list item component - only re-renders when its specific data changes
@@ -29,6 +31,8 @@ const ScanHistoryItem = memo(function ScanHistoryItem({
   onAddToShoppingList,
   onAddToComparison,
   compareDisabled,
+  addToListLabel,
+  compareLabel,
 }: ScanHistoryItemProps) {
   return (
     <div className="w-full flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 card-hover text-left group">
@@ -69,16 +73,16 @@ const ScanHistoryItem = memo(function ScanHistoryItem({
         <button
           onClick={onAddToShoppingList}
           className="p-2 text-gray-400 hover:text-green-500 transition-colors"
-          title="Legg til handleliste"
-          aria-label="Legg til handleliste"
+          title={addToListLabel}
+          aria-label={addToListLabel}
         >
           <Plus className="w-4 h-4" />
         </button>
         <button
           onClick={onAddToComparison}
           className="p-2 text-gray-400 hover:text-blue-500 transition-colors disabled:opacity-50"
-          title="Sammenlign"
-          aria-label="Sammenlign"
+          title={compareLabel}
+          aria-label={compareLabel}
           disabled={compareDisabled}
         >
           <ArrowLeftRight className="w-4 h-4" />
@@ -150,6 +154,8 @@ const ScanHistory = memo(function ScanHistory({
   if (recentScans.length === 0) return null;
 
   const compareDisabled = compareCount >= 2;
+  const addToListLabel = language === 'nb' ? 'Legg til handleliste' : 'Add to shopping list';
+  const compareLabel = language === 'nb' ? 'Sammenlign' : 'Compare';
 
   return (
     <div className="px-6 pb-6 animate-fade-in-up stagger-4">
@@ -184,6 +190,8 @@ const ScanHistory = memo(function ScanHistory({
             onAddToShoppingList={() => onAddToShoppingList(result.product)}
             onAddToComparison={() => onAddToComparison(result)}
             compareDisabled={compareDisabled}
+            addToListLabel={addToListLabel}
+            compareLabel={compareLabel}
           />
         ))}
       </div>

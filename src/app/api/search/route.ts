@@ -13,8 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const products = await searchProductsUnified(query, limit);
     return NextResponse.json({ products });
-  } catch (error) {
-    console.error('Search API error:', error);
+  } catch {
     return NextResponse.json({ products: [], error: 'Search failed' }, { status: 500 });
   }
 }

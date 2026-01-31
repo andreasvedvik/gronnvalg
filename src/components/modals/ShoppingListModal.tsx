@@ -57,8 +57,7 @@ export default function ShoppingListModal({
         const data = await response.json();
         setSearchResults(data.products || []);
         setShowSuggestions(true);
-      } catch (error) {
-        console.error('Search error:', error);
+      } catch {
         setSearchResults([]);
       } finally {
         setIsSearching(false);

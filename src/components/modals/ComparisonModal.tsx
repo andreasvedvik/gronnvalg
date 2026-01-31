@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { ProductData } from '@/lib/openfoodfacts';
 import { GrønnScoreResult, getScoreColor } from '@/lib/scoring';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
+import { useLanguage } from '@/lib/i18n';
 
 interface ScanResult {
   product: ProductData;
@@ -30,9 +31,29 @@ export default function ComparisonModal({
   onAddToComparison,
   onRemoveFromComparison,
 }: ComparisonModalProps) {
+  const { t, language } = useLanguage();
   const focusTrapRef = useFocusTrap(isOpen, onClose);
 
   if (!isOpen) return null;
+
+  const texts = {
+    nb: {
+      title: 'Sammenlign produkter',
+      description: 'Velg opptil 2 produkter fra historikken for å sammenligne',
+      remove: 'Fjern',
+      selectProduct: 'Velg produkt',
+      selectFromHistory: 'Velg fra historikk:',
+    },
+    en: {
+      title: 'Compare products',
+      description: 'Select up to 2 products from history to compare',
+      remove: 'Remove',
+      selectProduct: 'Select product',
+      selectFromHistory: 'Select from history:',
+    },
+  };
+
+  const tx = texts[language] || texts.nb;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4" onClick={onClose}>
@@ -41,7 +62,7 @@ export default function ComparisonModal({
           <div className="flex items-center justify-between mb-4">
             <h2 id="comparison-title" className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <ArrowLeftRight className="w-5 h-5" />
-              Sammenlign produkter
+              {tx.title}
             </h2>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
               <X className="w-5 h-5 text-gray-500" />
@@ -49,7 +70,7 @@ export default function ComparisonModal({
           </div>
 
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Velg opptil 2 produkter fra historikken for å sammenligne
+            {tx.description}
           </p>
 
           {/* Selected products for comparison */}
@@ -76,13 +97,13 @@ export default function ComparisonModal({
                         onClick={() => onRemoveFromComparison(product.product.barcode)}
                         className="mt-2 text-xs text-red-500 hover:underline"
                       >
-                        Fjern
+                        {tx.remove}
                       </button>
                     </div>
                   ) : (
                     <div className="text-center text-gray-400">
                       <Plus className="w-8 h-8 mx-auto mb-2" />
-                      <p className="text-sm">Velg produkt</p>
+                      <p className="text-sm">{tx.selectProduct}</p>
                     </div>
                   )}
                 </div>
@@ -92,7 +113,7 @@ export default function ComparisonModal({
 
           {/* Product list to choose from */}
           <div className="border-t dark:border-gray-700 pt-4">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Velg fra historikk:</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{tx.selectFromHistory}</p>
             <div className="space-y-2 max-h-48 overflow-auto">
               {recentScans.map(result => (
                 <button
