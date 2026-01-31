@@ -2,8 +2,8 @@
 // Combines data from multiple sources: Kassalapp, Matvaretabellen, Open Food Facts
 // Provides fallback chain and data enrichment
 
-import { ProductData, fetchProduct as fetchFromOpenFoodFacts } from './openfoodfacts';
-import { fetchFromKassalapp, isNorwegianFromKassalapp, extractPackagingFromKassalapp, KassalappProduct } from './kassalapp';
+import { ProductData, fetchProduct as fetchFromOpenFoodFacts, searchProducts as searchOpenFoodFacts } from './openfoodfacts';
+import { fetchFromKassalapp, searchKassalapp, isNorwegianFromKassalapp, extractPackagingFromKassalapp, KassalappProduct } from './kassalapp';
 import { findFoodByName, extractStandardNutrients, getNutriScoreGrade, Matvare } from './matvaretabellen';
 
 export interface DataSources {
@@ -212,4 +212,105 @@ export function calculateDataQualityBonus(sources: DataSources): number {
   if (sources.openFoodFacts) bonus += 10; // Global structured data
   if (sources.matvaretabellen) bonus += 10; // Official Norwegian nutrition
   return bonus;
+}
+
+/**
+ * Convert Kassalapp product to ProductData (exported version)
+ */
+export function kassalappToProductData(kp: KassalappProduct): ProductData {
+  const packaging = extractPackagingFromKassalapp(kp);
+  const isNorwegian = isNorwegianFromKassalapp(kp);
+
+  // Parse allergens from Kassalapp format
+  const allergens = kp.allergens
+    ?.filter(a => a.contains === 'YES')
+    .map(a => a.display_name) || [];
+  const traces = kp.allergens
+    ?.filter(a => a.contains === 'MAY_CONTAIN')
+    .map(a => a.display_name) || [];
+
+  return {
+    barcode: kp.ean,
+    name: kp.name,
+    brand: kp.brand || kp.vendor || '',
+    imageUrl: kp.image || '',
+    category: kp.category?.[0]?.name || 'Ukjent kategori',
+    origin: isNorwegian ? 'Norge' : '',
+    originTags: [],
+    manufacturingPlaces: '',
+    packaging: packaging.material,
+    packagingTags: [packaging.material],
+    packagingMaterials: [packaging.material],
+    packagingRecycling: [],
+    labels: [],
+    labelTags: [],
+    ecoscore: {
+      grade: 'unknown',
+      score: 0,
+      hasDetailedData: false,
+    },
+    nutriscore: {
+      grade: 'unknown',
+      score: 0,
+    },
+    novaGroup: 0,
+    ingredients: kp.ingredients || '',
+    isNorwegian,
+    allergenInfo: {
+      allergens,
+      traces,
+      hasAllergens: allergens.length > 0,
+      hasTraces: traces.length > 0,
+    },
+    raw: kp as any,
+  };
+}
+
+/**
+ * Unified search function - prioritizes Kassalapp (Norwegian stores) over Open Food Facts
+ * This gives products from: REMA, Kiwi, Meny, SPAR, Coop, Bunnpris, Joker, 7-Eleven, etc.
+ */
+export async function searchProductsUnified(query: string, limit: number = 15): Promise<ProductData[]> {
+  if (!query || query.length < 2) return [];
+
+  console.log('🔍 Unified search:', query);
+
+  try {
+    // Search both sources in parallel
+    const [kassalappResults, offResults] = await Promise.all([
+      searchKassalapp(query, limit).catch(() => []),
+      searchOpenFoodFacts(query, Math.floor(limit / 2)).catch(() => []),
+    ]);
+
+    console.log(`✅ Kassalapp: ${kassalappResults.length} results, OFF: ${offResults.length} results`);
+
+    // Convert Kassalapp results to ProductData
+    const kassalappProducts = kassalappResults.map(kp => kassalappToProductData(kp));
+
+    // Combine: Kassalapp first (Norwegian store products), then OFF
+    const seenBarcodes = new Set<string>();
+    const combined: ProductData[] = [];
+
+    // Add Kassalapp products first (these are definitely in Norwegian stores)
+    for (const product of kassalappProducts) {
+      if (!seenBarcodes.has(product.barcode)) {
+        seenBarcodes.add(product.barcode);
+        combined.push(product);
+      }
+    }
+
+    // Add Open Food Facts products (might have more eco data)
+    for (const product of offResults) {
+      if (!seenBarcodes.has(product.barcode)) {
+        seenBarcodes.add(product.barcode);
+        combined.push(product);
+      }
+    }
+
+    return combined.slice(0, limit);
+  } catch (error) {
+    console.error('Unified search error:', error);
+    // Fallback to Open Food Facts only
+    return searchOpenFoodFacts(query, limit);
+  }
 }

@@ -45,6 +45,64 @@ export function getCacheStats(): { products: number; searches: number } {
 }
 // ===== END CACHING =====
 
+// ===== NORWEGIAN TEXT NORMALIZATION =====
+// Fix common ASCII representations of Norwegian characters
+const norwegianWordMappings: Record<string, string> = {
+  // Common food words with æ
+  'baer': 'bær',
+  'aerter': 'ærter',
+  'laerer': 'lærer',
+  'vaer': 'vær',
+  'kaere': 'kjære',
+  // Common food words with ø
+  'kjoett': 'kjøtt',
+  'broed': 'brød',
+  'smoer': 'smør',
+  'floete': 'fløte',
+  'noetter': 'nøtter',
+  'roedbet': 'rødbete',
+  'groenn': 'grønn',
+  'groent': 'grønt',
+  'groennsaker': 'grønnsaker',
+  'oekologisk': 'økologisk',
+  'oel': 'øl',
+  // Common food words with å
+  'graasvin': 'gråsvin',
+  'raa': 'rå',
+  'blaabaer': 'blåbær',
+  'staa': 'stå',
+  'gaa': 'gå',
+  'maal': 'mål',
+  // Brand-specific fixes
+  'tine baer': 'tine bær',
+  'jordbaer': 'jordbær',
+  'bringebaer': 'bringebær',
+  'tranbaer': 'tranebær',
+  'multebaer': 'multebær',
+  'tyttbaer': 'tyttebær',
+};
+
+function normalizeNorwegianText(text: string): string {
+  if (!text) return text;
+
+  let normalized = text;
+
+  // Apply word-level mappings (case-insensitive)
+  for (const [ascii, norwegian] of Object.entries(norwegianWordMappings)) {
+    const regex = new RegExp(ascii, 'gi');
+    normalized = normalized.replace(regex, (match) => {
+      // Preserve original case
+      if (match[0] === match[0].toUpperCase()) {
+        return norwegian.charAt(0).toUpperCase() + norwegian.slice(1);
+      }
+      return norwegian;
+    });
+  }
+
+  return normalized;
+}
+// ===== END NORWEGIAN TEXT NORMALIZATION =====
+
 export interface OpenFoodFactsProduct {
   code: string;
   product_name: string;
@@ -259,8 +317,8 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
 
         const productData: ProductData = {
           barcode: product.code,
-          name: product.product_name || product.product_name_no || 'Ukjent produkt',
-          brand: product.brands || 'Ukjent merke',
+          name: normalizeNorwegianText(product.product_name || product.product_name_no || 'Ukjent produkt'),
+          brand: normalizeNorwegianText(product.brands || 'Ukjent merke'),
           imageUrl: product.image_url || product.image_small_url || '',
           category: product.categories?.split(',')[0]?.trim() || 'Ukjent kategori',
           origin: bestOrigin,
@@ -455,8 +513,8 @@ export async function searchAlternatives(category: string, limit: number = 5, pr
           const traces = parseAllergenTags(product.traces_tags);
           return {
             barcode: product.code,
-            name: product.product_name || 'Ukjent',
-            brand: product.brands || '',
+            name: normalizeNorwegianText(product.product_name || 'Ukjent'),
+            brand: normalizeNorwegianText(product.brands || ''),
             imageUrl: product.image_small_url || '',
             category: product.categories?.split(',')[0]?.trim() || '',
             origin: product.origins || (isNorwegian ? 'Norge' : ''),
@@ -511,23 +569,9 @@ export async function searchProducts(query: string, limit: number = 10): Promise
   try {
     if (!query || query.length < 2) return [];
 
-    // Search Norwegian database first
-    const searchUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(query)}&search_simple=1&tagtype_0=countries&tag_contains_0=contains&tag_0=norway&sort_by=unique_scans_n&page_size=${limit}&json=1`;
-
-    const response = await fetch(searchUrl, {
-      headers: {
-        'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)',
-      },
-    });
-
-    if (!response.ok) return [];
-
-    const data = await response.json();
-
-    if (data.products && data.products.length > 0) {
-      return data.products
-        .filter((p: any) => p.product_name) // Only products with names
-        .slice(0, limit)
+    const parseProducts = (products: any[]): ProductData[] => {
+      return products
+        .filter((p: any) => p.product_name)
         .map((product: any) => {
           const isNorwegian = isProductNorwegian(product);
           const ecoscoreData = product.ecoscore_data;
@@ -535,8 +579,8 @@ export async function searchProducts(query: string, limit: number = 10): Promise
           const traces = parseAllergenTags(product.traces_tags);
           return {
             barcode: product.code,
-            name: product.product_name || 'Ukjent',
-            brand: product.brands || '',
+            name: normalizeNorwegianText(product.product_name || 'Ukjent'),
+            brand: normalizeNorwegianText(product.brands || ''),
             imageUrl: product.image_small_url || product.image_url || '',
             category: product.categories?.split(',')[0]?.trim() || '',
             origin: product.origins || (isNorwegian ? 'Norge' : ''),
@@ -571,9 +615,45 @@ export async function searchProducts(query: string, limit: number = 10): Promise
             raw: product,
           };
         });
+    };
+
+    // Search Norwegian Open Food Facts - products available in Norwegian stores
+    // Use two searches: one strict (products tagged Norway) and one broader (all products in Norwegian database)
+    const strictNorwayUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(query)}&search_simple=1&tagtype_0=countries&tag_contains_0=contains&tag_0=norway&sort_by=unique_scans_n&page_size=${limit * 2}&json=1`;
+    const broaderNorwayUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(query)}&search_simple=1&sort_by=unique_scans_n&page_size=${limit * 2}&json=1`;
+
+    const [strictResponse, broaderResponse] = await Promise.all([
+      fetch(strictNorwayUrl, { headers: { 'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)' } }),
+      fetch(broaderNorwayUrl, { headers: { 'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)' } }),
+    ]);
+
+    const strictData = strictResponse.ok ? await strictResponse.json() : { products: [] };
+    const broaderData = broaderResponse.ok ? await broaderResponse.json() : { products: [] };
+
+    const strictProducts = parseProducts(strictData.products || []);
+    const broaderProducts = parseProducts(broaderData.products || []);
+
+    // Combine: strictly Norwegian tagged first, then other products from Norwegian database
+    const seenBarcodes = new Set<string>();
+    const combined: ProductData[] = [];
+
+    // Add products explicitly tagged with Norway first
+    for (const product of strictProducts) {
+      if (!seenBarcodes.has(product.barcode)) {
+        seenBarcodes.add(product.barcode);
+        combined.push(product);
+      }
     }
 
-    return [];
+    // Add other products from Norwegian database (scanned/available in Norway)
+    for (const product of broaderProducts) {
+      if (!seenBarcodes.has(product.barcode)) {
+        seenBarcodes.add(product.barcode);
+        combined.push(product);
+      }
+    }
+
+    return combined.slice(0, limit);
   } catch (error) {
     console.error('Error searching products:', error);
     return [];
@@ -629,8 +709,8 @@ export async function searchSimilarProducts(
         const traces = parseAllergenTags(p.traces_tags);
         return {
           barcode: p.code,
-          name: p.product_name || 'Ukjent',
-          brand: p.brands || '',
+          name: normalizeNorwegianText(p.product_name || 'Ukjent'),
+          brand: normalizeNorwegianText(p.brands || ''),
           imageUrl: p.image_small_url || p.image_url || '',
           category: p.categories?.split(',')[0]?.trim() || '',
           origin: p.origins || 'Norge',
@@ -725,8 +805,8 @@ async function searchByNameKeywordsNorwegian(
         const traces = parseAllergenTags(p.traces_tags);
         return {
           barcode: p.code,
-          name: p.product_name || 'Ukjent',
-          brand: p.brands || '',
+          name: normalizeNorwegianText(p.product_name || 'Ukjent'),
+          brand: normalizeNorwegianText(p.brands || ''),
           imageUrl: p.image_small_url || p.image_url || '',
           category: p.categories?.split(',')[0]?.trim() || '',
           origin: p.origins || 'Norge',

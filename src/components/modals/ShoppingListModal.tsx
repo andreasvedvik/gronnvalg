@@ -2,7 +2,7 @@
 
 import { X, ShoppingCart, Plus, Check, Trash2, Search, Loader2 } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
-import { searchProducts, ProductData } from '@/lib/openfoodfacts';
+import { ProductData } from '@/lib/openfoodfacts';
 import { useLanguage } from '@/lib/i18n';
 
 interface ShoppingItem {
@@ -49,8 +49,10 @@ export default function ShoppingListModal({
     const timer = setTimeout(async () => {
       setIsSearching(true);
       try {
-        const results = await searchProducts(newItem, 5);
-        setSearchResults(results);
+        // Use API route - searches Kassalapp (Norwegian stores) + Open Food Facts
+        const response = await fetch(`/api/search?q=${encodeURIComponent(newItem)}&limit=15`);
+        const data = await response.json();
+        setSearchResults(data.products || []);
         setShowSuggestions(true);
       } catch (error) {
         console.error('Search error:', error);
@@ -126,7 +128,7 @@ export default function ShoppingListModal({
 
             {/* Search suggestions dropdown */}
             {showSuggestions && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-12 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 max-h-64 overflow-y-auto">
+              <div className="absolute top-full left-0 right-12 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 max-h-80 overflow-y-auto">
                 {searchResults.map((product) => (
                   <button
                     key={product.barcode}
