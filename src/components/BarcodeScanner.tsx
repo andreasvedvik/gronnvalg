@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Camera, X, Loader2, FlashlightOff, Flashlight } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n';
 
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
@@ -10,6 +11,7 @@ interface BarcodeScannerProps {
 }
 
 export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeScannerProps) {
+  const { t } = useLanguage();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +57,7 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
       } catch (err) {
         console.error('Camera error:', err);
         setHasCamera(false);
-        setError('Kunne ikke starte kameraet. Prøv manuell input.');
+        setError(`${t.couldNotStartCamera}. ${t.tryManualInput}.`);
       }
     };
 
@@ -67,7 +69,7 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
         stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [onScan]);
+  }, [onScan, t]);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +89,7 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
           <X className="w-6 h-6 text-white" />
         </button>
         <div className="text-white text-sm bg-black/50 px-3 py-1 rounded-full">
-          {isLoading ? 'Søker...' : 'Skann strekkode'}
+          {isLoading ? t.searching : t.scanBarcode}
         </div>
       </div>
 
@@ -125,10 +127,10 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
           {/* Instructions */}
           <div className="absolute bottom-32 left-0 right-0 text-center px-4">
             <p className="text-white text-lg font-medium">
-              Plasser strekkoden i rammen
+              {t.placeBarcode}
             </p>
             <p className="text-gray-400 text-sm mt-1">
-              Skanningen starter automatisk
+              {t.scanningAuto}
             </p>
           </div>
         </div>
@@ -136,7 +138,7 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center">
             <Camera className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-white mb-4">{error || 'Kamera ikke tilgjengelig'}</p>
+            <p className="text-white mb-4">{error || t.cameraNotAvailable}</p>
           </div>
         </div>
       )}
@@ -148,7 +150,7 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
             type="text"
             value={manualInput}
             onChange={(e) => setManualInput(e.target.value)}
-            placeholder="Eller skriv inn strekkode manuelt..."
+            placeholder={t.orEnterManually}
             className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-xl border border-gray-700 focus:border-green-500 focus:outline-none"
             inputMode="numeric"
           />
@@ -157,13 +159,13 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
             disabled={!manualInput.trim() || isLoading}
             className="px-6 py-3 bg-green-500 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Søk'}
+            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.search}
           </button>
         </form>
 
         {/* Demo barcodes */}
         <div className="mt-3 text-center">
-          <p className="text-gray-500 text-xs mb-2">Prøv disse strekkodene:</p>
+          <p className="text-gray-500 text-xs mb-2">{t.tryTheseBarcodes}</p>
           <div className="flex gap-2 justify-center flex-wrap">
             {[
               { code: '7038010009457', name: 'TINE Melk' },

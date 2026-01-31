@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, lazy, Suspense, memo } from 'react';
-import { Leaf, Scan, Moon, Sun, User, ShoppingCart, MessageCircle } from 'lucide-react';
+import { Leaf, Scan, Moon, Sun, Info, ShoppingCart, MessageCircle, ExternalLink, Plus } from 'lucide-react';
+import Link from 'next/link';
 
 // Components
 import BarcodeScanner from '@/components/BarcodeScanner';
@@ -14,9 +15,14 @@ import FilterBar from '@/components/FilterBar';
 import ScanHistory from '@/components/ScanHistory';
 import AppFooter from '@/components/AppFooter';
 import LanguageSelector from '@/components/LanguageSelector';
+import LoadingSkeleton from '@/components/LoadingSkeleton';
+import InstallPrompt from '@/components/InstallPrompt';
 
 // i18n
 import { useLanguage } from '@/lib/i18n';
+
+// Hooks
+import { useServiceWorker } from '@/hooks/useServiceWorker';
 
 // Lazy load modals for better initial load performance
 const ScoreInfoModal = lazy(() => import('@/components/modals/ScoreInfoModal'));
@@ -28,7 +34,9 @@ const ChatModal = lazy(() => import('@/components/modals/ChatModal'));
 // Utils
 import { fetchProduct, searchAlternatives, searchSimilarProducts, ProductData } from '@/lib/openfoodfacts';
 import { calculateGrønnScore, GrønnScoreResult } from '@/lib/scoring';
+import { fetchFromKassalapp, KassalappProduct } from '@/lib/kassalapp';
 import analytics from '@/lib/analytics';
+import { StorePriceInfo } from '@/components/ProductCard';
 
 // Types
 interface ScanResult {
@@ -36,6 +44,7 @@ interface ScanResult {
   score: GrønnScoreResult;
   alternatives: ProductData[];
   similarProducts?: ProductData[]; // KUN norske produkter
+  prices?: StorePriceInfo[]; // Price comparison from Kassalapp
   timestamp?: number;
 }
 
@@ -56,11 +65,15 @@ export default function Home() {
   // i18n
   const { t } = useLanguage();
 
+  // Register service worker for PWA
+  useServiceWorker();
+
   // Core state
   const [showScanner, setShowScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notFoundBarcode, setNotFoundBarcode] = useState<string | null>(null);
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -80,19 +93,22 @@ export default function Home() {
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
   const [compareProducts, setCompareProducts] = useState<ScanResult[]>([]);
 
+  // Loading state
+  const [isInitializing, setIsInitializing] = useState(true);
+
   // Load data from localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     // Load dark mode preference
-    const savedDarkMode = localStorage.getItem('gronnvalg-darkmode');
+    const savedDarkMode = localStorage.getItem('gronnest-darkmode');
     if (savedDarkMode === 'true') {
       setDarkMode(true);
       document.documentElement.classList.add('dark');
     }
 
     // Load scan history
-    const savedHistory = localStorage.getItem('gronnvalg-history');
+    const savedHistory = localStorage.getItem('gronnest-history');
     if (savedHistory) {
       try {
         setRecentScans(JSON.parse(savedHistory));
@@ -102,7 +118,7 @@ export default function Home() {
     }
 
     // Load shopping list
-    const savedShoppingList = localStorage.getItem('gronnvalg-shopping');
+    const savedShoppingList = localStorage.getItem('gronnest-shopping');
     if (savedShoppingList) {
       try {
         setShoppingList(JSON.parse(savedShoppingList));
@@ -110,18 +126,21 @@ export default function Home() {
         console.error('Failed to load shopping list:', e);
       }
     }
+
+    // Mark initialization as complete
+    setIsInitializing(false);
   }, []);
 
   // Save history to localStorage
   useEffect(() => {
     if (recentScans.length > 0) {
-      localStorage.setItem('gronnvalg-history', JSON.stringify(recentScans));
+      localStorage.setItem('gronnest-history', JSON.stringify(recentScans));
     }
   }, [recentScans]);
 
   // Save shopping list to localStorage
   useEffect(() => {
-    localStorage.setItem('gronnvalg-shopping', JSON.stringify(shoppingList));
+    localStorage.setItem('gronnest-shopping', JSON.stringify(shoppingList));
   }, [shoppingList]);
 
   // Handle scroll for sticky header
@@ -135,7 +154,7 @@ export default function Home() {
   const toggleDarkMode = () => {
     const newMode = !darkMode;
     setDarkMode(newMode);
-    localStorage.setItem('gronnvalg-darkmode', String(newMode));
+    localStorage.setItem('gronnest-darkmode', String(newMode));
     document.documentElement.classList.toggle('dark', newMode);
     analytics.darkModeToggled(newMode);
   };
@@ -144,13 +163,14 @@ export default function Home() {
   const handleScan = async (barcode: string) => {
     setIsLoading(true);
     setError(null);
+    setNotFoundBarcode(null);
     analytics.scanStarted();
 
     try {
       const product = await fetchProduct(barcode);
 
       if (!product) {
-        setError(`${t.productNotFound}: ${barcode}. ${t.tryAnotherProduct}.`);
+        setNotFoundBarcode(barcode);
         analytics.scanFailed(barcode, 'not_found');
         setIsLoading(false);
         return;
@@ -158,18 +178,32 @@ export default function Home() {
 
       const score = calculateGrønnScore(product);
 
-      // Fetch both alternatives and similar products in parallel
+      // Fetch alternatives, similar products, and prices in parallel
       // Begge gir nå kun norske produkter
       let alternatives: ProductData[] = [];
       let similarProducts: ProductData[] = [];
+      let prices: StorePriceInfo[] = [];
 
-      // Alltid søk etter lignende norske produkter
-      const [altResult, similarResult] = await Promise.all([
+      // Alltid søk etter lignende norske produkter + priser fra Kassalapp
+      const [altResult, similarResult, kassalappData] = await Promise.all([
         product.category
           ? searchAlternatives(product.raw?.categories || product.category, 5, product.name)
           : Promise.resolve([]),
         searchSimilarProducts(product, 8),
+        fetchFromKassalapp(barcode),
       ]);
+
+      // Extract prices from Kassalapp if available
+      if (kassalappData?.store_prices?.length) {
+        prices = kassalappData.store_prices
+          .map((sp) => ({
+            price: sp.price.current,
+            unitPrice: sp.price.unit_price,
+            storeName: sp.store.name,
+            storeLogo: sp.store.logo,
+          }))
+          .sort((a, b) => a.price - b.price);
+      }
 
       alternatives = altResult.filter((a) => a.barcode !== product.barcode);
       similarProducts = similarResult.filter((p) => p.barcode !== product.barcode);
@@ -190,7 +224,7 @@ export default function Home() {
         );
       }
 
-      const result: ScanResult = { product, score, alternatives, similarProducts, timestamp: Date.now() };
+      const result: ScanResult = { product, score, alternatives, similarProducts, prices, timestamp: Date.now() };
       setScanResult(result);
       setShowScanner(false);
       analytics.scanCompleted(barcode, score.total);
@@ -253,7 +287,7 @@ export default function Home() {
   const clearHistory = () => {
     if (confirm(t.confirmClearHistory)) {
       setRecentScans([]);
-      localStorage.removeItem('gronnvalg-history');
+      localStorage.removeItem('gronnest-history');
     }
   };
 
@@ -261,6 +295,11 @@ export default function Home() {
   const averageScore = recentScans.length > 0
     ? Math.round(recentScans.reduce((sum, r) => sum + r.score.total, 0) / recentScans.length)
     : 0;
+
+  // Show loading skeleton during initialization
+  if (isInitializing) {
+    return <LoadingSkeleton />;
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 to-white dark:from-gray-900 dark:to-gray-800">
@@ -301,12 +340,13 @@ export default function Home() {
               )}
             </button>
 
-            <button
+            <Link
+              href="/om"
               className="w-11 h-11 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
-              aria-label={t.profile}
+              aria-label={t.aboutUs}
             >
-              <User className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </button>
+              <Info className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </Link>
           </div>
         </div>
       </header>
@@ -343,7 +383,7 @@ export default function Home() {
         <div className="relative">
           <div className="absolute inset-0 rounded-full animate-pulse-ring" />
           <button
-            onClick={() => setShowScanner(true)}
+            onClick={() => { setShowScanner(true); setNotFoundBarcode(null); }}
             className="relative scan-button animate-breathe w-44 h-44 rounded-full flex flex-col items-center justify-center"
             aria-label={t.scanProduct}
           >
@@ -375,6 +415,45 @@ export default function Home() {
         </div>
       )}
 
+      {/* Product Not Found - Contribute to OFF */}
+      {notFoundBarcode && (
+        <div className="mx-6 mb-6 p-5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl animate-scale-in">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-800/50 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Plus className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                {t.productNotFoundTitle}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                {t.barcodeNotInDatabase}: <span className="font-mono text-amber-700 dark:text-amber-400">{notFoundBarcode}</span>
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                {t.contributeDescription}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href={`https://world.openfoodfacts.org/cgi/product.pl?code=${notFoundBarcode}&lc=no`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  {t.addToOpenFoodFacts}
+                </a>
+                <button
+                  onClick={() => setNotFoundBarcode(null)}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors"
+                >
+                  {t.close}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Scan History */}
       <ScanHistory
         recentScans={recentScans}
@@ -393,6 +472,9 @@ export default function Home() {
 
       {/* Footer */}
       <AppFooter onShowContact={() => setShowContact(true)} />
+
+      {/* PWA Install Prompt */}
+      <InstallPrompt />
 
       {/* AI Chat FAB */}
       <button
@@ -477,7 +559,12 @@ export default function Home() {
           score={scanResult.score}
           alternatives={scanResult.alternatives}
           similarProducts={scanResult.similarProducts}
+          prices={scanResult.prices}
           onClose={() => setScanResult(null)}
+          onSelectProduct={(barcode) => {
+            setScanResult(null); // Close current card
+            handleScan(barcode); // Fetch and show the selected product
+          }}
         />
       )}
     </main>

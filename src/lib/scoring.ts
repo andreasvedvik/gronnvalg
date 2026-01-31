@@ -1,4 +1,4 @@
-// GrønnScore Calculation Logic
+// Miljøscore Calculation Logic (Grønnest App)
 // Combines sustainability (eco) and health scores with Norwegian context
 
 import { ProductData } from './openfoodfacts';

@@ -31,11 +31,11 @@ export default function PersonvernPage() {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Ditt personvern er viktig</h2>
-              <p className="text-sm text-gray-500">GrønnValg tar personvern på alvor</p>
+              <p className="text-sm text-gray-500">Grønnest tar personvern på alvor</p>
             </div>
           </div>
           <p className="text-gray-600 dark:text-gray-300">
-            GrønnValg er utviklet med personvern som en kjerneprioritet. Vi samler inn minimalt med data
+            Grønnest er utviklet med personvern som en kjerneprioritet. Vi samler inn minimalt med data
             og alt lagres lokalt på din enhet. Denne personvernerklæringen forklarer hvordan vi håndterer
             informasjon når du bruker appen vår.
           </p>
@@ -127,7 +127,7 @@ export default function PersonvernPage() {
 
           <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              GrønnValg bruker ikke informasjonskapsler for sporing eller markedsføring.
+              Grønnest bruker ikke informasjonskapsler for sporing eller markedsføring.
               Vi bruker kun localStorage for å lagre dine innstillinger og skannehistorikk lokalt på din enhet.
             </p>
           </div>
@@ -204,16 +204,16 @@ export default function PersonvernPage() {
 
           <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              For å slette all data som GrønnValg har lagret på din enhet:
+              For å slette all data som Grønnest har lagret på din enhet:
             </p>
             <button
               onClick={() => {
-                if (confirm('Er du sikker på at du vil slette all GrønnValg-data? Dette inkluderer skannehistorikk, handleliste, innstillinger og bruksstatistikk.')) {
-                  localStorage.removeItem('gronnvalg-history');
-                  localStorage.removeItem('gronnvalg-shopping');
-                  localStorage.removeItem('gronnvalg-darkmode');
-                  localStorage.removeItem('gronnvalg_analytics');
-                  sessionStorage.removeItem('gronnvalg_session');
+                if (confirm('Er du sikker på at du vil slette all Grønnest-data? Dette inkluderer skannehistorikk, handleliste, innstillinger og bruksstatistikk.')) {
+                  localStorage.removeItem('gronnest-history');
+                  localStorage.removeItem('gronnest-shopping');
+                  localStorage.removeItem('gronnest-darkmode');
+                  localStorage.removeItem('gronnest_analytics');
+                  sessionStorage.removeItem('gronnest_session');
                   alert('All data er slettet. Siden vil nå lastes på nytt.');
                   window.location.href = '/';
                 }
@@ -237,10 +237,10 @@ export default function PersonvernPage() {
               Hvis du har spørsmål om personvern eller ønsker å utøve dine rettigheter, kontakt oss på:
             </p>
             <a
-              href="mailto:personvern@gronnvalg.no"
+              href="mailto:personvern@gronnest.no"
               className="text-green-600 hover:underline font-medium"
             >
-              personvern@gronnvalg.no
+              personvern@gronnest.no
             </a>
           </div>
         </section>
@@ -252,7 +252,7 @@ export default function PersonvernPage() {
             Vi vil varsle om vesentlige endringer gjennom appen.
             <br />
             <br />
-            GrønnValg © 2026 | Org.nr: [Kommer]
+            Grønnest © 2026 | Org.nr: [Kommer]
           </p>
         </section>
       </div>

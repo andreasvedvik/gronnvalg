@@ -1,7 +1,7 @@
 {
-  "name": "GrønnValg",
-  "short_name": "GrønnValg",
-  "description": "Skann produkter og se bærekraft-score. Finn norske alternativer.",
+  "name": "Grønnest",
+  "short_name": "Grønnest",
+  "description": "Skann produkter og se miljøscore. Finn det grønneste valget.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f0fdf4",
@@ -9,14 +9,23 @@
   "orientation": "portrait",
   "icons": [
     {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
       "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "categories": ["food", "lifestyle", "shopping"]
 }

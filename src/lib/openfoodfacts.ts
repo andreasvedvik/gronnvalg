@@ -286,7 +286,7 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
     for (const url of urls) {
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)',
+          'User-Agent': 'Grønnest/1.0 (contact@gronnest.no)',
         },
       });
 
@@ -540,7 +540,7 @@ export async function searchAlternatives(category: string, limit: number = 5, pr
 
     const response = await fetch(searchUrl, {
       headers: {
-        'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)',
+        'User-Agent': 'Grønnest/1.0 (contact@gronnest.no)',
       },
     });
 
@@ -672,8 +672,8 @@ export async function searchProducts(query: string, limit: number = 10): Promise
     const broaderNorwayUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&search_terms=${encodeURIComponent(query)}&search_simple=1&sort_by=unique_scans_n&page_size=${limit * 2}&json=1`;
 
     const [strictResponse, broaderResponse] = await Promise.all([
-      fetch(strictNorwayUrl, { headers: { 'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)' } }),
-      fetch(broaderNorwayUrl, { headers: { 'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)' } }),
+      fetch(strictNorwayUrl, { headers: { 'User-Agent': 'Grønnest/1.0 (contact@gronnest.no)' } }),
+      fetch(broaderNorwayUrl, { headers: { 'User-Agent': 'Grønnest/1.0 (contact@gronnest.no)' } }),
     ]);
 
     const strictData = strictResponse.ok ? await strictResponse.json() : { products: [] };
@@ -733,7 +733,7 @@ export async function searchSimilarProducts(
 
     const response = await fetch(norwegianUrl, {
       headers: {
-        'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)',
+        'User-Agent': 'Grønnest/1.0 (contact@gronnest.no)',
       },
     });
 
@@ -830,7 +830,7 @@ async function searchByNameKeywordsNorwegian(
 
     const response = await fetch(searchUrl, {
       headers: {
-        'User-Agent': 'GrønnValg/1.0 (contact@gronnvalg.no)',
+        'User-Agent': 'Grønnest/1.0 (contact@gronnest.no)',
       },
     });
 

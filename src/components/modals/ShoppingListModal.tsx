@@ -1,6 +1,6 @@
 'use client';
 
-import { X, ShoppingCart, Plus, Check, Trash2, Search, Loader2 } from 'lucide-react';
+import { X, ShoppingCart, Plus, Check, Trash2, Search, Loader2, Share2, Download } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { ProductData } from '@/lib/openfoodfacts';
 import { useLanguage } from '@/lib/i18n';
@@ -73,6 +73,44 @@ export default function ShoppingListModal({
       setNewItem('');
       setSearchResults([]);
       setShowSuggestions(false);
+    }
+  };
+
+  // Export shopping list
+  const handleExport = async () => {
+    const uncheckedItems = items.filter(i => !i.checked);
+    const checkedItems = items.filter(i => i.checked);
+
+    let text = '🛒 Handleliste fra Grønnest\n\n';
+
+    if (uncheckedItems.length > 0) {
+      text += '📝 Å handle:\n';
+      uncheckedItems.forEach(item => {
+        text += `• ${item.name}\n`;
+      });
+    }
+
+    if (checkedItems.length > 0) {
+      text += '\n✅ Handlet:\n';
+      checkedItems.forEach(item => {
+        text += `• ${item.name}\n`;
+      });
+    }
+
+    text += '\n---\nLaget med Grønnest - Finn det grønneste valget!';
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'Handleliste',
+          text: text,
+        });
+      } else {
+        await navigator.clipboard.writeText(text);
+        alert(t.copiedToClipboard || 'Kopiert til utklippstavle!');
+      }
+    } catch (err) {
+      console.log('Export failed:', err);
     }
   };
 
@@ -229,13 +267,22 @@ export default function ShoppingListModal({
           )}
 
           {items.length > 0 && (
-            <div className="mt-4 pt-4 border-t dark:border-gray-700 flex justify-between text-sm text-gray-500">
-              <span>{items.filter(i => i.checked).length} / {items.length} {t.itemsCompleted}</span>
+            <div className="mt-4 pt-4 border-t dark:border-gray-700">
+              <div className="flex justify-between text-sm text-gray-500 mb-3">
+                <span>{items.filter(i => i.checked).length} / {items.length} {t.itemsCompleted}</span>
+                <button
+                  onClick={onClearCompleted}
+                  className="text-green-600 hover:underline"
+                >
+                  {t.removeCompleted}
+                </button>
+              </div>
               <button
-                onClick={onClearCompleted}
-                className="text-green-600 hover:underline"
+                onClick={handleExport}
+                className="w-full py-2 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center justify-center gap-2 transition-colors"
               >
-                {t.removeCompleted}
+                <Share2 className="w-4 h-4" />
+                {t.exportList || 'Del handleliste'}
               </button>
             </div>
           )}

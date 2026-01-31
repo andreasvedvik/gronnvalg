@@ -1,6 +1,7 @@
 'use client';
 
 import { X, Leaf, MapPin, Sparkles } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n';
 
 interface ScoreInfoModalProps {
   isOpen: boolean;
@@ -8,6 +9,8 @@ interface ScoreInfoModalProps {
 }
 
 export default function ScoreInfoModal({ isOpen, onClose }: ScoreInfoModalProps) {
+  const { t } = useLanguage();
+
   if (!isOpen) return null;
 
   return (
@@ -15,14 +18,14 @@ export default function ScoreInfoModal({ isOpen, onClose }: ScoreInfoModalProps)
       <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Hva er GrønnScore?</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t.whatIsMiljoscore}</h2>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
 
           <p className="text-gray-600 dark:text-gray-300 mb-6">
-            GrønnScore er vår bærekraftvurdering som hjelper deg å ta grønnere valg. Scoren beregnes basert på flere faktorer:
+            {t.miljoscoreDescription}
           </p>
 
           <div className="space-y-4 mb-6">
@@ -31,8 +34,8 @@ export default function ScoreInfoModal({ isOpen, onClose }: ScoreInfoModalProps)
                 <Leaf className="w-4 h-4 text-green-600" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900 dark:text-white">Miljøpåvirkning</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">CO2-utslipp, vannforbruk og arealbruk</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{t.environmentalImpact}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t.environmentalImpactDesc}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -40,8 +43,8 @@ export default function ScoreInfoModal({ isOpen, onClose }: ScoreInfoModalProps)
                 <MapPin className="w-4 h-4 text-blue-600" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900 dark:text-white">Opprinnelse</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Norske produkter gir høyere score</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{t.originLabel}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t.originDesc}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -49,14 +52,14 @@ export default function ScoreInfoModal({ isOpen, onClose }: ScoreInfoModalProps)
                 <Sparkles className="w-4 h-4 text-yellow-600" />
               </div>
               <div>
-                <p className="font-semibold text-gray-900 dark:text-white">Sertifiseringer</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Nyt Norge, Debio, Svanemerket m.fl.</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{t.certificationsLabel}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t.certificationsDesc}</p>
               </div>
             </div>
           </div>
 
           <div className="border-t dark:border-gray-700 pt-4">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Karakterskala:</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{t.gradeScale}</p>
             <div className="grid grid-cols-5 gap-2">
               {[
                 { grade: 'A', range: '80-100', color: 'bg-green-500' },
@@ -77,9 +80,8 @@ export default function ScoreInfoModal({ isOpen, onClose }: ScoreInfoModalProps)
 
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
             <p className="text-xs text-blue-700 dark:text-blue-300">
-              <strong>Merk:</strong> GrønnScore er et estimat basert på tilgjengelige data.
-              Les mer om vår metodikk på{' '}
-              <a href="/om" className="underline">Om GrønnValg</a>.
+              <strong>{t.dataQuality}:</strong> {t.scoreDisclaimer}{' '}
+              <a href="/om" className="underline">{t.aboutUs}</a>.
             </p>
           </div>
         </div>

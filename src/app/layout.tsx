@@ -12,13 +12,13 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "GrønnValg - Velg grønnere, lev bedre",
-  description: "Skann produkter og se bærekraft-score. Finn norske alternativer.",
+  title: "Grønnest - Finn det grønneste valget",
+  description: "Skann produkter og se miljøscore. Finn norske alternativer.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "GrønnValg",
+    title: "Grønnest",
   },
   icons: {
     icon: [

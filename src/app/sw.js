@@ -1,5 +1,5 @@
-// GrønnValg Service Worker
-const CACHE_NAME = 'gronnvalg-v1';
+// Grønnest Service Worker
+const CACHE_NAME = 'gronnest-v1';
 const OFFLINE_URL = '/';
 
 // Files to cache for offline use

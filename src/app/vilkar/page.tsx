@@ -30,12 +30,12 @@ export default function VilkarPage() {
               <FileText className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Velkommen til GrønnValg</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Velkommen til Grønnest</h2>
               <p className="text-sm text-gray-500">Les vilkårene før du bruker appen</p>
             </div>
           </div>
           <p className="text-gray-600 dark:text-gray-300">
-            Ved å bruke GrønnValg godtar du disse brukervilkårene. Hvis du ikke godtar vilkårene,
+            Ved å bruke Grønnest godtar du disse brukervilkårene. Hvis du ikke godtar vilkårene,
             ber vi deg om å ikke bruke appen. Vi anbefaler at du leser gjennom disse vilkårene nøye.
           </p>
         </section>
@@ -48,7 +48,7 @@ export default function VilkarPage() {
           </div>
           <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Ved å laste ned, installere eller bruke GrønnValg-appen godtar du å være bundet av disse
+              Ved å laste ned, installere eller bruke Grønnest-appen godtar du å være bundet av disse
               brukervilkårene. Hvis du bruker appen på vegne av en organisasjon, godtar du vilkårene
               på vegne av denne organisasjonen.
             </p>
@@ -63,7 +63,7 @@ export default function VilkarPage() {
           </div>
           <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              GrønnValg er en gratis app som lar brukere:
+              Grønnest er en gratis app som lar brukere:
             </p>
             <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
               <li className="flex items-start gap-2">
@@ -72,7 +72,7 @@ export default function VilkarPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5"></span>
-                Se GrønnScore basert på produktets miljøpåvirkning
+                Se Miljøscore basert på produktets miljøpåvirkning
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5"></span>
@@ -97,7 +97,7 @@ export default function VilkarPage() {
             <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800">
               <h3 className="font-medium text-yellow-800 dark:text-yellow-300 mb-2">Viktig informasjon</h3>
               <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                GrønnValg gir informasjon og veiledning, men erstatter ikke profesjonell rådgivning
+                Grønnest gir informasjon og veiledning, men erstatter ikke profesjonell rådgivning
                 innen ernæring, helse eller miljø.
               </p>
             </div>
@@ -112,9 +112,9 @@ export default function VilkarPage() {
             </div>
 
             <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-              <h3 className="font-medium text-gray-900 dark:text-white mb-2">3.2 GrønnScore og Næringsinfo</h3>
+              <h3 className="font-medium text-gray-900 dark:text-white mb-2">3.2 Miljøscore og Næringsinfo</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                GrønnScore er et estimat basert på tilgjengelige data og vår metodikk. Scoren er ment
+                Miljøscore er et estimat basert på tilgjengelige data og vår metodikk. Scoren er ment
                 som veiledning for å sammenligne produkter, ikke som en absolutt vurdering.
                 Næringsinfo (Nutri-Score, NOVA) er basert på europeiske klassifiseringssystemer
                 og utgjør ikke medisinsk eller ernæringsmessig rådgivning.
@@ -124,8 +124,9 @@ export default function VilkarPage() {
             <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
               <h3 className="font-medium text-gray-900 dark:text-white mb-2">3.3 Allergener og helseinformasjon</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                GrønnValg viser ikke fullstendig allergeninformasjon. Personer med matallergier eller
-                intoleranser må alltid sjekke produktemballasjen. Ved helserelaterte spørsmål,
+                Grønnest viser allergeninformasjon hentet fra Open Food Facts-databasen. Denne informasjonen
+                kan være ufullstendig eller utdatert. Personer med matallergier eller intoleranser må alltid
+                sjekke produktemballasjen for offisiell allergeninformasjon. Ved helserelaterte spørsmål,
                 kontakt helsepersonell.
               </p>
             </div>
@@ -171,7 +172,7 @@ export default function VilkarPage() {
           </div>
           <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              GrønnValg-appen, inkludert design, kode og GrønnScore-metodikken, er beskyttet av
+              Grønnest-appen, inkludert design, kode og Miljøscore-metodikken, er beskyttet av
               opphavsrett. Produktdata fra Open Food Facts er tilgjengelig under Open Database License.
               Du kan bruke appen til personlig, ikke-kommersiell bruk.
             </p>
@@ -186,7 +187,7 @@ export default function VilkarPage() {
           </div>
           <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              GrønnValg leveres "som den er" uten garantier av noe slag. Vi er ikke ansvarlige for
+              Grønnest leveres "som den er" uten garantier av noe slag. Vi er ikke ansvarlige for
               tap eller skade som følge av bruk av appen, inkludert men ikke begrenset til:
               feilaktig produktinformasjon, tap av data, eller beslutninger tatt basert på
               informasjon fra appen. Vår maksimale ansvar er begrenset til det beløp du har
@@ -235,10 +236,10 @@ export default function VilkarPage() {
               Har du spørsmål om disse vilkårene? Kontakt oss på:
             </p>
             <a
-              href="mailto:vilkar@gronnvalg.no"
+              href="mailto:vilkar@gronnest.no"
               className="text-green-600 hover:underline font-medium"
             >
-              vilkar@gronnvalg.no
+              vilkar@gronnest.no
             </a>
           </div>
         </section>
@@ -246,9 +247,9 @@ export default function VilkarPage() {
         {/* Footer */}
         <section className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-            Ved å bruke GrønnValg bekrefter du at du har lest, forstått og godtar disse brukervilkårene.
+            Ved å bruke Grønnest bekrefter du at du har lest, forstått og godtar disse brukervilkårene.
             <br /><br />
-            GrønnValg © 2026 | Org.nr: [Kommer]
+            Grønnest © 2026 | Org.nr: [Kommer]
           </p>
         </section>
       </div>

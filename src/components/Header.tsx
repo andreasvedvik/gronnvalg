@@ -10,8 +10,8 @@ export default function Header() {
           <Leaf className="w-8 h-8" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">GrønnValg</h1>
-          <p className="text-gronn-100 text-sm">Helse + Bærekraft i én app</p>
+          <h1 className="text-2xl font-bold">Grønnest</h1>
+          <p className="text-gronn-100 text-sm">Finn det grønneste valget</p>
         </div>
       </div>
     </header>

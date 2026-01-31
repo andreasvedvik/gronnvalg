@@ -2,6 +2,7 @@
 
 import { TrendingUp, HelpCircle, ArrowLeftRight } from 'lucide-react';
 import { getScoreColor, getScoreTextColor } from '@/lib/scoring';
+import { useLanguage } from '@/lib/i18n';
 
 interface StatsCardProps {
   averageScore: number;
@@ -18,17 +19,19 @@ export default function StatsCard({
   onShowComparison,
   showCompareButton,
 }: StatsCardProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="mx-6 mb-6 p-5 bg-white dark:bg-gray-800 rounded-2xl shadow-soft border border-gray-100 dark:border-gray-700 animate-fade-in-up stagger-2">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-caption text-gray-600 dark:text-gray-400">
-            Din gjennomsnittlige GrønnScore
+            {t.yourAverageScore}
           </span>
           <button
             onClick={onShowScoreInfo}
             className="text-gray-400 hover:text-green-500 transition-colors"
-            aria-label="Hva er GrønnScore?"
+            aria-label={t.whatIsMiljoscore}
           >
             <HelpCircle className="w-4 h-4" />
           </button>
@@ -41,7 +44,7 @@ export default function StatsCard({
         </span>
         <span className="text-gray-400 dark:text-gray-500 mb-1 font-medium">/100</span>
         <span className="ml-auto text-caption text-gray-500 dark:text-gray-400">
-          Basert på {scanCount} skann
+          {t.basedOnScans.replace('{count}', String(scanCount))}
         </span>
       </div>
       <div className="mt-4 h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -58,7 +61,7 @@ export default function StatsCard({
           className="mt-4 w-full flex items-center justify-center gap-2 py-2 text-sm text-green-600 dark:text-green-400 font-medium hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
         >
           <ArrowLeftRight className="w-4 h-4" />
-          Sammenlign produkter
+          {t.compareProducts}
         </button>
       )}
     </div>

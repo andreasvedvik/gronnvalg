@@ -1,7 +1,8 @@
 'use client';
 
 import { memo, useCallback } from 'react';
-import { History, Leaf, ChevronRight, Plus, ArrowLeftRight } from 'lucide-react';
+import { History, Leaf, ChevronRight, Plus, ArrowLeftRight, Share2 } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n';
 import { ProductData } from '@/lib/openfoodfacts';
 import { GrønnScoreResult, getScoreColor } from '@/lib/scoring';
 
@@ -105,6 +106,45 @@ const ScanHistory = memo(function ScanHistory({
   onClearHistory,
   compareCount,
 }: ScanHistoryProps) {
+  const { t, language } = useLanguage();
+
+  const handleExport = useCallback(async () => {
+    const header = language === 'nb'
+      ? '📊 Skannehistorikk fra Grønnest\n\n'
+      : '📊 Scan History from Grønnest\n\n';
+
+    let text = header;
+    recentScans.slice(0, 10).forEach((result, index) => {
+      const date = result.timestamp
+        ? new Date(result.timestamp).toLocaleDateString(language === 'nb' ? 'nb-NO' : 'en-US')
+        : '';
+      text += `${index + 1}. ${result.product.name}`;
+      if (result.product.brand) text += ` (${result.product.brand})`;
+      text += ` - ${language === 'nb' ? 'Score' : 'Score'}: ${result.score.grade} (${result.score.total}/100)`;
+      if (date) text += ` - ${date}`;
+      text += '\n';
+    });
+
+    text += language === 'nb'
+      ? '\n🌱 Skann produkter på gronnest.vercel.app'
+      : '\n🌱 Scan products at gronnest.vercel.app';
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: language === 'nb' ? 'Skannehistorikk' : 'Scan History',
+          text: text,
+        });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          await navigator.clipboard.writeText(text);
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(text);
+    }
+  }, [recentScans, language]);
+
   if (recentScans.length === 0) return null;
 
   const compareDisabled = compareCount >= 2;
@@ -114,14 +154,24 @@ const ScanHistory = memo(function ScanHistory({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-overline text-gray-400 dark:text-gray-500 flex items-center gap-2">
           <History className="w-4 h-4" />
-          Skannehistorikk ({recentScans.length})
+          {t.scanHistory} ({recentScans.length})
         </h3>
-        <button
-          onClick={onClearHistory}
-          className="text-xs text-gray-400 hover:text-red-500 transition-colors"
-        >
-          Slett alt
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExport}
+            className="text-xs text-gray-400 hover:text-green-500 transition-colors flex items-center gap-1"
+            title={t.exportHistory}
+          >
+            <Share2 className="w-3 h-3" />
+            {t.export}
+          </button>
+          <button
+            onClick={onClearHistory}
+            className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+          >
+            {t.clearAll}
+          </button>
+        </div>
       </div>
       <div className="space-y-3">
         {recentScans.slice(0, 10).map((result) => (

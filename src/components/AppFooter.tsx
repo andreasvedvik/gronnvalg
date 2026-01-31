@@ -28,7 +28,7 @@ export default function AppFooter({ onShowContact }: AppFooterProps) {
           Open Food Facts
         </a>
       </p>
-      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">GrønnValg © 2026</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Grønnest © 2026</p>
 
       {/* Links */}
       <div className="mt-4 flex items-center justify-center gap-4 text-xs">
@@ -36,7 +36,7 @@ export default function AppFooter({ onShowContact }: AppFooterProps) {
           href="/om"
           className="text-green-600 dark:text-green-400 hover:underline"
         >
-          Om GrønnValg
+          Om Grønnest
         </Link>
         <span className="text-gray-300 dark:text-gray-600">|</span>
         <Link

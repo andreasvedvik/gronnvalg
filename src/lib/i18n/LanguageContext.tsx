@@ -12,7 +12,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'gronnvalg-language';
+const STORAGE_KEY = 'gronnest-language';
 
 interface LanguageProviderProps {
   children: ReactNode;

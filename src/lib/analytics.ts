@@ -1,12 +1,35 @@
 /**
- * GrønnValg Analytics
+ * Grønnest Analytics
  *
  * Lightweight, privacy-friendly analytics for tracking user behavior.
  * GDPR compliant - no personal data collected, no cookies used.
  *
- * To connect to Vercel Analytics later, run:
- * npm install @vercel/analytics
- * Then uncomment the Vercel integration below.
+ * ═══════════════════════════════════════════════════════════════
+ * SETUP INSTRUCTIONS
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * Option 1: Vercel Analytics (Recommended for Vercel deployments)
+ * ----------------------------------------------------------------
+ * 1. Run: npm install @vercel/analytics
+ * 2. Vercel Analytics auto-activates on Vercel deployments
+ * 3. View analytics at: https://vercel.com/[your-team]/[project]/analytics
+ *
+ * Option 2: Custom Analytics Endpoint
+ * ----------------------------------------------------------------
+ * 1. Set environment variable: NEXT_PUBLIC_ANALYTICS_ENDPOINT=https://your-api.com/events
+ * 2. Your endpoint receives JSON: { event, timestamp, sessionId, url, ...data }
+ *
+ * Option 3: Local Storage Only (Default)
+ * ----------------------------------------------------------------
+ * Events are stored locally for debugging. Access via browser console:
+ * - JSON.parse(localStorage.getItem('gronnest_analytics'))
+ * - window.getAnalyticsSummary() (if exposed)
+ *
+ * Environment Variables:
+ * - NEXT_PUBLIC_ANALYTICS_ENABLED: 'true' to enable in dev (default: production only)
+ * - NEXT_PUBLIC_ANALYTICS_ENDPOINT: Custom endpoint URL
+ * - NEXT_PUBLIC_ANALYTICS_DEBUG: 'true' for console logging
+ * ═══════════════════════════════════════════════════════════════
  */
 
 // Event types for type safety
@@ -37,22 +60,26 @@ interface AnalyticsConfig {
   endpoint?: string;
 }
 
-// Configuration
+// Configuration from environment variables
 const config: AnalyticsConfig = {
-  enabled: typeof window !== 'undefined' && process.env.NODE_ENV === 'production',
-  debug: process.env.NODE_ENV === 'development',
-  // Add your analytics endpoint here if using a custom backend
-  // endpoint: 'https://your-analytics-api.com/events'
+  enabled:
+    typeof window !== 'undefined' &&
+    (process.env.NODE_ENV === 'production' ||
+      process.env.NEXT_PUBLIC_ANALYTICS_ENABLED === 'true'),
+  debug:
+    process.env.NODE_ENV === 'development' ||
+    process.env.NEXT_PUBLIC_ANALYTICS_DEBUG === 'true',
+  endpoint: process.env.NEXT_PUBLIC_ANALYTICS_ENDPOINT,
 };
 
 // Session ID (anonymous, regenerated each session)
 const getSessionId = (): string => {
   if (typeof window === 'undefined') return '';
 
-  let sessionId = sessionStorage.getItem('gronnvalg_session');
+  let sessionId = sessionStorage.getItem('gronnest_session');
   if (!sessionId) {
     sessionId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    sessionStorage.setItem('gronnvalg_session', sessionId);
+    sessionStorage.setItem('gronnest_session', sessionId);
   }
   return sessionId;
 };
@@ -99,13 +126,27 @@ export function trackEvent(event: AnalyticsEvent, data?: EventData): void {
     sendToEndpoint(payload);
   }
 
-  // Vercel Analytics integration (uncomment after npm install @vercel/analytics)
-  // try {
-  //   const { track } = await import('@vercel/analytics');
-  //   track(event, data);
-  // } catch (e) {
-  //   // Vercel Analytics not installed
-  // }
+  // Vercel Analytics integration (auto-activates if @vercel/analytics is installed)
+  sendToVercelAnalytics(event, data);
+}
+
+// Try to send to Vercel Analytics if available
+// Uses a string-based import to avoid TypeScript errors when @vercel/analytics is not installed
+async function sendToVercelAnalytics(event: AnalyticsEvent, data?: EventData): Promise<void> {
+  // Only attempt if running in browser
+  if (typeof window === 'undefined') return;
+
+  try {
+    // Dynamic import using variable to prevent TypeScript from checking the module
+    const moduleName = '@vercel/analytics';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const vercel: any = await import(/* webpackIgnore: true */ moduleName);
+    if (vercel?.track) {
+      vercel.track(event, data);
+    }
+  } catch {
+    // Vercel Analytics not installed - this is fine, silently ignore
+  }
 }
 
 /**
@@ -121,7 +162,7 @@ export function trackPageView(pageName?: string): void {
 // Store events locally for basic analytics
 function storeEventLocally(payload: Record<string, unknown>): void {
   try {
-    const stored = localStorage.getItem('gronnvalg_analytics');
+    const stored = localStorage.getItem('gronnest_analytics');
     const events = stored ? JSON.parse(stored) : [];
 
     // Keep last 100 events
@@ -130,7 +171,7 @@ function storeEventLocally(payload: Record<string, unknown>): void {
       events.shift();
     }
 
-    localStorage.setItem('gronnvalg_analytics', JSON.stringify(events));
+    localStorage.setItem('gronnest_analytics', JSON.stringify(events));
   } catch (e) {
     // localStorage not available or quota exceeded
   }
@@ -166,7 +207,7 @@ export function getAnalyticsSummary(): Record<string, number> {
   if (typeof window === 'undefined') return {};
 
   try {
-    const stored = localStorage.getItem('gronnvalg_analytics');
+    const stored = localStorage.getItem('gronnest_analytics');
     const events = stored ? JSON.parse(stored) : [];
 
     // Count events by type
@@ -186,8 +227,8 @@ export function getAnalyticsSummary(): Record<string, number> {
  */
 export function clearAnalytics(): void {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem('gronnvalg_analytics');
-  sessionStorage.removeItem('gronnvalg_session');
+  localStorage.removeItem('gronnest_analytics');
+  sessionStorage.removeItem('gronnest_session');
 }
 
 // Convenience functions for common events

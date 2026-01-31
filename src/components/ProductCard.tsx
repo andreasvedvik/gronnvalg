@@ -3,10 +3,18 @@
 import { useState } from 'react';
 import { ProductData } from '@/lib/openfoodfacts';
 import { GrønnScoreResult, getScoreColor, getScoreTextColor, getGradeEmoji } from '@/lib/scoring';
-import { X, Leaf, Heart, Truck, Package, Award, Recycle, ChevronRight, ExternalLink, AlertCircle, HelpCircle, AlertTriangle, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Leaf, Heart, Truck, Package, Award, Recycle, ChevronRight, ExternalLink, AlertCircle, HelpCircle, AlertTriangle, Info, ChevronDown, ChevronUp, Share2, Tag, Store } from 'lucide-react';
 import Image from 'next/image';
 import { useLanguage } from '@/lib/i18n';
 import { getProductCertifications, CertificationInfo } from '@/lib/certifications';
+
+// Price info from Kassalapp
+export interface StorePriceInfo {
+  price: number;
+  unitPrice?: number;
+  storeName: string;
+  storeLogo?: string;
+}
 
 interface ProductCardProps {
   product: ProductData;
@@ -14,11 +22,38 @@ interface ProductCardProps {
   onClose: () => void;
   alternatives?: ProductData[];
   similarProducts?: ProductData[]; // KUN norske produkter
+  onSelectProduct?: (barcode: string) => void; // Callback for selecting a similar product
+  prices?: StorePriceInfo[]; // Price comparison data from Kassalapp
 }
 
-export default function ProductCard({ product, score, onClose, alternatives = [], similarProducts = [] }: ProductCardProps) {
+export default function ProductCard({ product, score, onClose, alternatives = [], similarProducts = [], onSelectProduct, prices = [] }: ProductCardProps) {
   const { t, language } = useLanguage();
   const [showCertDetails, setShowCertDetails] = useState(false);
+
+  // Share product function
+  const handleShare = async () => {
+    const shareText = language === 'nb'
+      ? `${product.name} fra ${product.brand} har Miljøscore ${score.grade} (${score.total}/100) på Grønnest!`
+      : `${product.name} from ${product.brand} has Eco Score ${score.grade} (${score.total}/100) on Grønnest!`;
+
+    const shareData = {
+      title: 'Grønnest',
+      text: shareText,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(`${shareText}\n${window.location.href}`);
+        alert(language === 'nb' ? 'Kopiert til utklippstavle!' : 'Copied to clipboard!');
+      }
+    } catch (err) {
+      console.log('Share failed:', err);
+    }
+  };
 
   // Get certification explanations for product labels
   const certifications = getProductCertifications(product.labels, product.labelTags || []);
@@ -53,6 +88,13 @@ export default function ProductCard({ product, score, onClose, alternatives = []
           {product.isNorwegian && (
             <span className="text-xl" title={t.producedInNorway}>🇳🇴</span>
           )}
+          <button
+            onClick={handleShare}
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            aria-label={language === 'nb' ? 'Del' : 'Share'}
+          >
+            <Share2 className="w-5 h-5 text-gray-600" />
+          </button>
         </div>
 
         {/* Product Hero */}
@@ -74,7 +116,7 @@ export default function ProductCard({ product, score, onClose, alternatives = []
             {/* Scores */}
             <div className="flex-1">
               <div className="flex gap-3">
-                {/* GrønnScore */}
+                {/* Miljøscore */}
                 <div className="flex-1 text-center">
                   <div
                     className={`w-16 h-16 mx-auto ${getScoreColor(score.total)} rounded-2xl flex items-center justify-center mb-1 shadow-md`}
@@ -382,6 +424,77 @@ export default function ProductCard({ product, score, onClose, alternatives = []
           </div>
         </div>
 
+        {/* Price Comparison & Store Finder */}
+        {prices.length > 0 && (
+          <div className="mx-4 mt-4 bg-blue-50 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Tag className="w-4 h-4 text-blue-600" />
+                {t.priceComparison}
+              </h3>
+              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                {(language === 'nb' ? t.availableAtStores : t.availableAtStores).replace('{count}', prices.length.toString())}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {prices.slice(0, 4).map((storePrice, i) => (
+                <div
+                  key={`price-${storePrice.storeName}-${i}`}
+                  className={`flex items-center justify-between p-3 rounded-xl ${
+                    i === 0 ? 'bg-green-100 border border-green-200' : 'bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-gray-100">
+                      {storePrice.storeLogo ? (
+                        <img
+                          src={storePrice.storeLogo}
+                          alt={storePrice.storeName}
+                          className="w-8 h-8 object-contain"
+                        />
+                      ) : (
+                        <Store className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-900">{storePrice.storeName}</span>
+                      {i === 0 && (
+                        <span className="ml-2 text-xs text-green-700 bg-green-200 px-1.5 py-0.5 rounded-full">
+                          {t.lowestPrice}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`font-bold ${i === 0 ? 'text-green-700' : 'text-gray-900'}`}>
+                      {storePrice.price.toFixed(2)} kr
+                    </span>
+                    {storePrice.unitPrice && (
+                      <p className="text-xs text-gray-500">
+                        {storePrice.unitPrice.toFixed(2)} kr/kg
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {prices.length > 4 && (
+              <a
+                href={`https://kassal.app/produkt/${product.barcode}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                {t.seeAllPrices}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              {t.pricesFrom}
+            </p>
+          </div>
+        )}
+
         {/* Lignende norske produkter - kun norske produkter for norske brukere */}
         {hasNorwegianProducts && (
           <div className="mx-4 mt-4 mb-6">
@@ -392,9 +505,10 @@ export default function ProductCard({ product, score, onClose, alternatives = []
               </h3>
               <div className="space-y-2">
                 {norwegianProducts.slice(0, 5).map((alt, i) => (
-                  <div
+                  <button
                     key={`no-${alt.barcode}-${i}`}
-                    className="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm"
+                    onClick={() => onSelectProduct?.(alt.barcode)}
+                    className="w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer text-left"
                   >
                     <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
                       {alt.imageUrl ? (
@@ -427,7 +541,7 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                       <p className="text-xs text-gray-500 truncate">{alt.brand}</p>
                     </div>
                     <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                  </div>
+                  </button>
                 ))}
               </div>
               {norwegianProducts.length === 0 && (

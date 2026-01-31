@@ -1,4 +1,4 @@
-// Oversettelser for GrønnValg
+// Oversettelser for Grønnest
 // Norwegian (nb) er hovedspråket, English (en) er alternativ
 
 export type Language = 'nb' | 'en';
@@ -177,13 +177,82 @@ export interface Translations {
 
   // More info
   seeMoreOnOFF: string;
+
+  // Scanner
+  couldNotStartCamera: string;
+  tryManualInput: string;
+  searching: string;
+  placeBarcode: string;
+  scanningAuto: string;
+  cameraNotAvailable: string;
+  orEnterManually: string;
+  tryTheseBarcodes: string;
+
+  // Score Info Modal
+  whatIsMiljoscore: string;
+  miljoscoreDescription: string;
+  environmentalImpact: string;
+  environmentalImpactDesc: string;
+  originLabel: string;
+  originDesc: string;
+  certificationsLabel: string;
+  certificationsDesc: string;
+  gradeScale: string;
+  scoreDisclaimer: string;
+
+  // Contact Modal
+  contactUs: string;
+  contactDescription: string;
+  email: string;
+  aboutGronnest: string;
+  aboutGronnestDesc: string;
+
+  // Chat Modal
+  gronnHelper: string;
+  aiAssistantDesc: string;
+  chatWelcome: string;
+  chatSuggestion1: string;
+  chatSuggestion2: string;
+  chatSuggestion3: string;
+  writeMessage: string;
+
+  // Stats Card
+  yourAverageScore: string;
+  basedOnScans: string;
+
+  // Export/Share
+  exportList: string;
+  copiedToClipboard: string;
+
+  // Scan History
+  scanHistory: string;
+  exportHistory: string;
+  export: string;
+  clearAll: string;
+
+  // Contribute to OFF
+  productNotFoundTitle: string;
+  barcodeNotInDatabase: string;
+  helpUsGrow: string;
+  addToOpenFoodFacts: string;
+  contributeDescription: string;
+
+  // Price Comparison
+  priceComparison: string;
+  lowestPrice: string;
+  atStore: string;
+  pricePerUnit: string;
+  noPricesAvailable: string;
+  pricesFrom: string;
+  availableAtStores: string;
+  seeAllPrices: string;
 }
 
 export const translations: Record<Language, Translations> = {
   nb: {
     // App
-    appName: 'GrønnValg',
-    appTagline: 'Velg grønnere, lev bedre',
+    appName: 'Grønnest',
+    appTagline: 'Finn det grønneste valget',
 
     // Navigation & Actions
     scanProduct: 'Skann produkt',
@@ -214,7 +283,7 @@ export const translations: Record<Language, Translations> = {
     producedInNorway: 'Norskprodusert',
 
     // Scores
-    gronnScore: 'GrønnScore',
+    gronnScore: 'Miljøscore',
     whyThisScore: 'Hvorfor denne scoren?',
     healthInfo: 'Helseinformasjon',
     nutritionInfo: 'Næringsinfo',
@@ -290,8 +359,8 @@ export const translations: Record<Language, Translations> = {
     compareProducts: 'Sammenlign produkter',
 
     // Welcome
-    welcomeTitle: 'Velkommen til GrønnValg',
-    welcomeSubtitle: 'Din guide til bærekraftige valg',
+    welcomeTitle: 'Velkommen til Grønnest',
+    welcomeSubtitle: 'Finn det grønneste valget',
     welcomeDescription: 'Skann produkter for å se miljø- og helsepoeng, finn grønnere alternativer og bygg bærekraftige vaner.',
 
     // How It Works
@@ -354,12 +423,81 @@ export const translations: Record<Language, Translations> = {
 
     // More info
     seeMoreOnOFF: 'Se mer på Open Food Facts',
+
+    // Scanner
+    couldNotStartCamera: 'Kunne ikke starte kameraet',
+    tryManualInput: 'Prøv manuell input',
+    searching: 'Søker...',
+    placeBarcode: 'Plasser strekkoden i rammen',
+    scanningAuto: 'Skanningen starter automatisk',
+    cameraNotAvailable: 'Kamera ikke tilgjengelig',
+    orEnterManually: 'Eller skriv inn strekkode manuelt...',
+    tryTheseBarcodes: 'Prøv disse strekkodene:',
+
+    // Score Info Modal
+    whatIsMiljoscore: 'Hva er Miljøscore?',
+    miljoscoreDescription: 'Miljøscore er vår bærekraftvurdering som hjelper deg å ta grønnere valg. Scoren beregnes basert på flere faktorer:',
+    environmentalImpact: 'Miljøpåvirkning',
+    environmentalImpactDesc: 'CO2-utslipp, vannforbruk og arealbruk',
+    originLabel: 'Opprinnelse',
+    originDesc: 'Norske produkter gir høyere score',
+    certificationsLabel: 'Sertifiseringer',
+    certificationsDesc: 'Nyt Norge, Debio, Svanemerket m.fl.',
+    gradeScale: 'Karakterskala:',
+    scoreDisclaimer: 'Miljøscore er et estimat basert på tilgjengelige data. Les mer om vår metodikk på',
+
+    // Contact Modal
+    contactUs: 'Kontakt oss',
+    contactDescription: 'Har du spørsmål, tilbakemeldinger eller forslag? Vi vil gjerne høre fra deg!',
+    email: 'E-post',
+    aboutGronnest: 'Om Grønnest:',
+    aboutGronnestDesc: 'Vi er et norsk team som ønsker å gjøre det enkelt å ta bærekraftige valg i hverdagen. Appen er gratis og samler ikke inn personlige data.',
+
+    // Chat Modal
+    gronnHelper: 'GrønnHjelper',
+    aiAssistantDesc: 'AI-assistent for grønnere valg',
+    chatWelcome: 'Hei! Jeg kan hjelpe deg med å finne grønnere produkter. Prøv å spørre:',
+    chatSuggestion1: 'Hva er det grønneste brødet?',
+    chatSuggestion2: 'Hvordan fungerer Miljøscore?',
+    chatSuggestion3: 'Tips for norske produkter',
+    writeMessage: 'Skriv en melding...',
+
+    // Stats Card
+    yourAverageScore: 'Din gjennomsnittlige Miljøscore',
+    basedOnScans: 'Basert på {count} skann',
+
+    // Export/Share
+    exportList: 'Del handleliste',
+    copiedToClipboard: 'Kopiert til utklippstavle!',
+
+    // Scan History
+    scanHistory: 'Skannehistorikk',
+    exportHistory: 'Eksporter historikk',
+    export: 'Del',
+    clearAll: 'Slett alt',
+
+    // Contribute to OFF
+    productNotFoundTitle: 'Produkt ikke funnet',
+    barcodeNotInDatabase: 'Denne strekkoden finnes ikke i databasen',
+    helpUsGrow: 'Hjelp oss å vokse!',
+    addToOpenFoodFacts: 'Legg til på Open Food Facts',
+    contributeDescription: 'Open Food Facts er en åpen database med mat fra hele verden. Du kan legge til dette produktet slik at andre også kan bruke det.',
+
+    // Price Comparison
+    priceComparison: 'Prissammenligning',
+    lowestPrice: 'Laveste pris',
+    atStore: 'hos',
+    pricePerUnit: 'per',
+    noPricesAvailable: 'Prisdata ikke tilgjengelig',
+    pricesFrom: 'Priser fra Kassalapp',
+    availableAtStores: 'Tilgjengelig i {count} butikker',
+    seeAllPrices: 'Se alle priser på Kassalapp',
   },
 
   en: {
     // App
-    appName: 'GrønnValg',
-    appTagline: 'Choose greener, live better',
+    appName: 'Grønnest',
+    appTagline: 'Find the greenest choice',
 
     // Navigation & Actions
     scanProduct: 'Scan product',
@@ -390,7 +528,7 @@ export const translations: Record<Language, Translations> = {
     producedInNorway: 'Made in Norway',
 
     // Scores
-    gronnScore: 'GrønnScore',
+    gronnScore: 'Eco Score',
     whyThisScore: 'Why this score?',
     healthInfo: 'Health information',
     nutritionInfo: 'Nutrition info',
@@ -466,8 +604,8 @@ export const translations: Record<Language, Translations> = {
     compareProducts: 'Compare products',
 
     // Welcome
-    welcomeTitle: 'Welcome to GrønnValg',
-    welcomeSubtitle: 'Your guide to sustainable choices',
+    welcomeTitle: 'Welcome to Grønnest',
+    welcomeSubtitle: 'Find the greenest choice',
     welcomeDescription: 'Scan products to see environmental and health scores, find greener alternatives and build sustainable habits.',
 
     // How It Works
@@ -530,6 +668,75 @@ export const translations: Record<Language, Translations> = {
 
     // More info
     seeMoreOnOFF: 'See more on Open Food Facts',
+
+    // Scanner
+    couldNotStartCamera: 'Could not start camera',
+    tryManualInput: 'Try manual input',
+    searching: 'Searching...',
+    placeBarcode: 'Place the barcode in the frame',
+    scanningAuto: 'Scanning starts automatically',
+    cameraNotAvailable: 'Camera not available',
+    orEnterManually: 'Or enter barcode manually...',
+    tryTheseBarcodes: 'Try these barcodes:',
+
+    // Score Info Modal
+    whatIsMiljoscore: 'What is Eco Score?',
+    miljoscoreDescription: 'Eco Score is our sustainability rating that helps you make greener choices. The score is calculated based on several factors:',
+    environmentalImpact: 'Environmental impact',
+    environmentalImpactDesc: 'CO2 emissions, water usage and land use',
+    originLabel: 'Origin',
+    originDesc: 'Norwegian products score higher',
+    certificationsLabel: 'Certifications',
+    certificationsDesc: 'Nyt Norge, Debio, Nordic Swan etc.',
+    gradeScale: 'Grade scale:',
+    scoreDisclaimer: 'Eco Score is an estimate based on available data. Learn more about our methodology at',
+
+    // Contact Modal
+    contactUs: 'Contact us',
+    contactDescription: 'Have questions, feedback or suggestions? We would love to hear from you!',
+    email: 'Email',
+    aboutGronnest: 'About Grønnest:',
+    aboutGronnestDesc: 'We are a Norwegian team that wants to make sustainable choices easy in everyday life. The app is free and does not collect personal data.',
+
+    // Chat Modal
+    gronnHelper: 'GreenHelper',
+    aiAssistantDesc: 'AI assistant for greener choices',
+    chatWelcome: 'Hi! I can help you find greener products. Try asking:',
+    chatSuggestion1: 'What is the greenest bread?',
+    chatSuggestion2: 'How does Eco Score work?',
+    chatSuggestion3: 'Tips for Norwegian products',
+    writeMessage: 'Write a message...',
+
+    // Stats Card
+    yourAverageScore: 'Your average Eco Score',
+    basedOnScans: 'Based on {count} scans',
+
+    // Export/Share
+    exportList: 'Share shopping list',
+    copiedToClipboard: 'Copied to clipboard!',
+
+    // Scan History
+    scanHistory: 'Scan History',
+    exportHistory: 'Export history',
+    export: 'Share',
+    clearAll: 'Clear all',
+
+    // Contribute to OFF
+    productNotFoundTitle: 'Product not found',
+    barcodeNotInDatabase: 'This barcode is not in our database',
+    helpUsGrow: 'Help us grow!',
+    addToOpenFoodFacts: 'Add to Open Food Facts',
+    contributeDescription: 'Open Food Facts is an open database of food from around the world. You can add this product so others can use it too.',
+
+    // Price Comparison
+    priceComparison: 'Price Comparison',
+    lowestPrice: 'Lowest price',
+    atStore: 'at',
+    pricePerUnit: 'per',
+    noPricesAvailable: 'Price data not available',
+    pricesFrom: 'Prices from Kassalapp',
+    availableAtStores: 'Available at {count} stores',
+    seeAllPrices: 'See all prices on Kassalapp',
   },
 };
 

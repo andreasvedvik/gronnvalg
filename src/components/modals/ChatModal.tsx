@@ -1,7 +1,8 @@
 'use client';
 
-import { X, Bot, Send } from 'lucide-react';
+import { X, Bot, Send, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
+import { useLanguage } from '@/lib/i18n';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -14,10 +15,40 @@ interface ChatModalProps {
 }
 
 export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
+  const { t, language } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
 
   if (!isOpen) return null;
+
+  // Simple keyword-based responses (not real AI)
+  const getResponse = (userInput: string): string => {
+    const inputLower = userInput.toLowerCase();
+
+    if (language === 'nb') {
+      if (inputLower.includes('grønn') && inputLower.includes('brød')) {
+        return 'For grønnere brødvalg, se etter økologiske alternativer fra lokale bakerier. Produkter med kort ingrediensliste og norsk korn scorer ofte høyt. Prøv å skanne "Økologisk grovbrød" fra Bakehuset!';
+      } else if (inputLower.includes('norsk') || inputLower.includes('lokal')) {
+        return 'Norske produkter har ofte lavere klimaavtrykk pga. kortere transport. Se etter "Nyt Norge"-merket eller sjekk produktets opprinnelsesland i appen.';
+      } else if (inputLower.includes('økologisk') || inputLower.includes('organic')) {
+        return 'Økologiske produkter dyrkes uten syntetiske sprøytemidler. Bruk filteret "Kun økologisk" for å finne sertifiserte alternativer!';
+      } else if (inputLower.includes('score') || inputLower.includes('poeng') || inputLower.includes('miljø')) {
+        return 'Miljøscore beregnes basert på: miljøpåvirkning, næringsinnhold, opprinnelse og emballasje. A er best (80-100), E er dårligst (0-19).';
+      }
+      return 'Jeg kan hjelpe deg med å finne grønnere produktvalg! Spør meg om bærekraftige alternativer, hva Miljøscore betyr, eller tips for miljøvennlig handling.';
+    } else {
+      if (inputLower.includes('green') && inputLower.includes('bread')) {
+        return 'For greener bread choices, look for organic alternatives from local bakeries. Products with short ingredient lists and local grains often score higher.';
+      } else if (inputLower.includes('norwegian') || inputLower.includes('local')) {
+        return 'Norwegian products often have lower carbon footprint due to shorter transport. Look for the "Nyt Norge" label or check the product\'s country of origin in the app.';
+      } else if (inputLower.includes('organic')) {
+        return 'Organic products are grown without synthetic pesticides. Use the "Organic only" filter to find certified alternatives!';
+      } else if (inputLower.includes('score') || inputLower.includes('eco')) {
+        return 'Eco Score is calculated based on: environmental impact, nutritional content, origin and packaging. A is best (80-100), E is worst (0-19).';
+      }
+      return 'I can help you find greener product choices! Ask me about sustainable alternatives, what Eco Score means, or tips for eco-friendly shopping.';
+    }
+  };
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -25,23 +56,9 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
     const userMessage: ChatMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
 
-    // Simulate AI response based on keywords
+    // Simulate response delay
     setTimeout(() => {
-      let response = '';
-      const inputLower = input.toLowerCase();
-
-      if (inputLower.includes('grønn') && inputLower.includes('brød')) {
-        response = 'For grønnere brødvalg, se etter økologiske alternativer fra lokale bakerier. Produkter med kort ingrediensliste og norsk korn scorer ofte høyt. Prøv å skanne "Økologisk grovbrød" fra Bakehuset!';
-      } else if (inputLower.includes('norsk') || inputLower.includes('lokal')) {
-        response = 'Norske produkter har ofte lavere klimaavtrykk pga. kortere transport. Se etter "Nyt Norge"-merket eller sjekk produktets opprinnelsesland i appen.';
-      } else if (inputLower.includes('økologisk') || inputLower.includes('organic')) {
-        response = 'Økologiske produkter dyrkes uten syntetiske sprøytemidler. Bruk filteret "Kun økologisk" for å finne sertifiserte alternativer!';
-      } else if (inputLower.includes('score') || inputLower.includes('poeng')) {
-        response = 'GrønnScore beregnes basert på: miljøpåvirkning, næringsinnhold, opprinnelse og emballasje. A er best (80-100), E er dårligst (0-40).';
-      } else {
-        response = 'Jeg kan hjelpe deg med å finne grønnere produktvalg! Spør meg om bærekraftige alternativer, hva GrønnScore betyr, eller tips for miljøvennlig handling.';
-      }
-
+      const response = getResponse(input);
       const assistantMessage: ChatMessage = { role: 'assistant', content: response };
       setMessages(prev => [...prev, assistantMessage]);
     }, 500);
@@ -58,13 +75,21 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
               <Bot className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <h2 className="font-bold text-gray-900 dark:text-white">GrønnHjelper</h2>
-              <p className="text-xs text-gray-500">AI-assistent for grønnere valg</p>
+              <h2 className="font-bold text-gray-900 dark:text-white">{t.gronnHelper}</h2>
+              <p className="text-xs text-gray-500">{t.aiAssistantDesc}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
             <X className="w-5 h-5 text-gray-500" />
           </button>
+        </div>
+
+        {/* Beta notice */}
+        <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800">
+          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs">
+            <AlertCircle className="w-3 h-3" />
+            <span>{language === 'nb' ? 'Beta: Enkle forhåndsprogrammerte svar' : 'Beta: Simple pre-programmed responses'}</span>
+          </div>
         </div>
 
         {/* Chat messages */}
@@ -73,14 +98,10 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
             <div className="text-center py-8">
               <Bot className="w-12 h-12 text-green-200 dark:text-green-800 mx-auto mb-4" />
               <p className="text-gray-500 dark:text-gray-400 mb-4">
-                Hei! Jeg kan hjelpe deg med å finne grønnere produkter. Prøv å spørre:
+                {t.chatWelcome}
               </p>
               <div className="space-y-2">
-                {[
-                  'Hva er det grønneste brødet?',
-                  'Hvordan fungerer GrønnScore?',
-                  'Tips for norske produkter'
-                ].map((suggestion) => (
+                {[t.chatSuggestion1, t.chatSuggestion2, t.chatSuggestion3].map((suggestion) => (
                   <button
                     key={suggestion}
                     onClick={() => setInput(suggestion)}
@@ -119,7 +140,7 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Skriv en melding..."
+              placeholder={t.writeMessage}
               className="flex-1 px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
             />
             <button

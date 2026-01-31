@@ -17,7 +17,7 @@ export default function OmPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              Om GrønnValg
+              Om Grønnest
               <Leaf className="w-6 h-6 text-green-500" />
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">Metodikk og datakilder</p>
@@ -38,29 +38,29 @@ export default function OmPage() {
             </div>
           </div>
           <p className="text-gray-600 dark:text-gray-300">
-            GrønnValg hjelper deg å ta informerte valg når du handler. Ved å skanne produkter
+            Grønnest hjelper deg å ta informerte valg når du handler. Ved å skanne produkter
             kan du se miljøpåvirkning og finne norske, bærekraftige alternativer. Vi tror at
             små valg i hverdagen kan gjøre en stor forskjell for miljøet.
           </p>
         </section>
 
-        {/* GrønnScore Methodology */}
+        {/* Miljøscore Methodology */}
         <section className="mb-8">
           <div className="flex items-center gap-2 mb-4">
             <Scale className="w-5 h-5 text-green-600" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Slik beregner vi GrønnScore</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Slik beregner vi Miljøscore</h2>
           </div>
 
           <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 mb-4">
             <p className="text-sm text-blue-800 dark:text-blue-300">
-              <strong>Viktig:</strong> GrønnScore er et verktøy for å sammenligne produkters miljøpåvirkning.
+              <strong>Viktig:</strong> Miljøscore er et verktøy for å sammenligne produkters miljøpåvirkning.
               Scoren er basert på tilgjengelige data og bør brukes som veiledning, ikke absolutt sannhet.
             </p>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-              <h3 className="font-semibold text-gray-900 dark:text-white">GrønnScore (0-100)</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-white">Miljøscore (0-100)</h3>
               <p className="text-sm text-gray-500 mt-1">Vektet gjennomsnitt av fem faktorer:</p>
             </div>
 
@@ -243,7 +243,7 @@ export default function OmPage() {
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></span>
-                <span>GrønnScore er et estimat basert på tilgjengelige data og kan ikke fange alle miljøfaktorer.</span>
+                <span>Miljøscore er et estimat basert på tilgjengelige data og kan ikke fange alle miljøfaktorer.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-1.5 flex-shrink-0"></span>
@@ -262,13 +262,13 @@ export default function OmPage() {
 
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              GrønnValg er utviklet av et norsk team som brenner for bærekraft og teknologi.
+              Grønnest er utviklet av et norsk team som brenner for bærekraft og teknologi.
               Vi tror at tilgang til god informasjon er nøkkelen til bedre forbrukervalg.
               <br /><br />
               Appen er gratis å bruke og vi samler ikke inn personlige data.
               Har du spørsmål eller tilbakemeldinger? Send oss en e-post på{' '}
-              <a href="mailto:hei@gronnvalg.no" className="text-green-600 hover:underline">
-                hei@gronnvalg.no
+              <a href="mailto:hei@gronnest.no" className="text-green-600 hover:underline">
+                hei@gronnest.no
               </a>
             </p>
           </div>
@@ -300,7 +300,7 @@ export default function OmPage() {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-xs text-gray-400">
-            GrønnValg © 2026 | Versjon 1.0
+            Grønnest © 2026 | Versjon 1.0
           </p>
         </div>
       </div>
