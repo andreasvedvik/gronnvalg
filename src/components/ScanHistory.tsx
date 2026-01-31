@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useCallback } from 'react';
+import Image from 'next/image';
 import { History, Leaf, ChevronRight, Plus, ArrowLeftRight, Share2 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { ProductData } from '@/lib/openfoodfacts';
@@ -35,13 +36,14 @@ const ScanHistoryItem = memo(function ScanHistoryItem({
         onClick={onSelect}
         className="flex items-center gap-4 flex-1 min-w-0"
       >
-        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
+        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 relative">
           {result.product.imageUrl ? (
-            <img
+            <Image
               src={result.product.imageUrl}
               alt={result.product.name}
-              className="w-full h-full object-contain"
-              loading="lazy"
+              fill
+              sizes="56px"
+              className="object-contain"
             />
           ) : (
             <Leaf className="w-6 h-6 text-gray-300 dark:text-gray-500" />

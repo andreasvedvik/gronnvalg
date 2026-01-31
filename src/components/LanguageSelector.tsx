@@ -22,7 +22,7 @@ export default function LanguageSelector({ variant = 'button', showLabel = false
     return (
       <button
         onClick={toggleLanguage}
-        className="w-11 h-11 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+        className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
         aria-label={`Bytt språk til ${language === 'nb' ? 'engelsk' : 'norsk'}`}
         title={`${currentLang.flag} ${currentLang.label}`}
       >

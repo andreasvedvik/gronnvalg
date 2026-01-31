@@ -11,7 +11,8 @@ export default function PersonvernPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/"
-            className="w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 hover:scale-105 transition-transform"
+            aria-label="Tilbake til forsiden"
+            className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 hover:scale-105 transition-transform"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </Link>

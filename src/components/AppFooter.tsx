@@ -1,6 +1,7 @@
 'use client';
 
 import { Mail } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 interface AppFooterProps {
@@ -11,10 +12,12 @@ export default function AppFooter({ onShowContact }: AppFooterProps) {
   return (
     <footer className="px-6 pb-8 text-center safe-bottom">
       <div className="flex items-center justify-center gap-2 mb-2">
-        <img
+        <Image
           src="https://static.openfoodfacts.org/images/logos/off-logo-horizontal-light.svg"
           alt="Open Food Facts"
-          className="h-5 opacity-50 dark:invert"
+          width={100}
+          height={20}
+          className="opacity-50 dark:invert"
         />
       </div>
       <p className="text-xs text-gray-400 dark:text-gray-500">

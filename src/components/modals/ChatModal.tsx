@@ -3,6 +3,7 @@
 import { X, Bot, Send, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -16,6 +17,7 @@ interface ChatModalProps {
 
 export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
   const { t, language } = useLanguage();
+  const focusTrapRef = useFocusTrap(isOpen, onClose);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
 
@@ -68,14 +70,14 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div ref={focusTrapRef} role="dialog" aria-modal="true" aria-labelledby="chat-title" className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
               <Bot className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <h2 className="font-bold text-gray-900 dark:text-white">{t.gronnHelper}</h2>
+              <h2 id="chat-title" className="font-bold text-gray-900 dark:text-white">{t.gronnHelper}</h2>
               <p className="text-xs text-gray-500">{t.aiAssistantDesc}</p>
             </div>
           </div>

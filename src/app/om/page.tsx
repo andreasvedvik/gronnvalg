@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowLeft, Leaf, Info, Database, Scale, TrendingUp, MapPin, Package, Award, Users, Heart, ExternalLink } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function OmPage() {
@@ -11,7 +12,8 @@ export default function OmPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/"
-            className="w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 hover:scale-105 transition-transform"
+            aria-label="Tilbake til forsiden"
+            className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 hover:scale-105 transition-transform"
           >
             <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </Link>
@@ -201,10 +203,12 @@ export default function OmPage() {
 
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center gap-4 mb-4">
-              <img
+              <Image
                 src="https://static.openfoodfacts.org/images/logos/off-logo-horizontal-light.svg"
                 alt="Open Food Facts"
-                className="h-8 dark:invert"
+                width={120}
+                height={32}
+                className="dark:invert"
               />
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">

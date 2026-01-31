@@ -84,7 +84,8 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
       <div className="absolute top-0 left-0 right-0 z-10 p-4 flex justify-between items-center">
         <button
           onClick={onClose}
-          className="w-10 h-10 bg-black/50 rounded-full flex items-center justify-center"
+          aria-label={t.close}
+          className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center"
         >
           <X className="w-6 h-6 text-white" />
         </button>

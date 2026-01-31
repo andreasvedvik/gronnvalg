@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect, useRef } from 'react'
 import { Search, Loader2, X } from 'lucide-react'
 import { ProductData } from '@/lib/openfoodfacts'
 import { calculateGrønnScore, getScoreColor } from '@/lib/scoring'
@@ -14,6 +15,8 @@ interface SearchBarProps {
   onClear: () => void
 }
 
+const DEBOUNCE_DELAY = 300 // milliseconds
+
 export default function SearchBar({
   searchQuery,
   searchResults,
@@ -23,21 +26,60 @@ export default function SearchBar({
   onSelectResult,
   onClear,
 }: SearchBarProps) {
+  const [localQuery, setLocalQuery] = useState(searchQuery)
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Sync localQuery with searchQuery when it changes externally (e.g., on clear)
+  useEffect(() => {
+    setLocalQuery(searchQuery)
+  }, [searchQuery])
+
+  // Debounced search effect
+  useEffect(() => {
+    // Clear previous timeout
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current)
+    }
+
+    // Only search if query has changed and is different from parent state
+    if (localQuery !== searchQuery) {
+      debounceRef.current = setTimeout(() => {
+        onSearch(localQuery)
+      }, DEBOUNCE_DELAY)
+    }
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+    }
+  }, [localQuery, searchQuery, onSearch])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalQuery(e.target.value)
+  }
+
+  const handleClear = () => {
+    setLocalQuery('')
+    onClear()
+  }
+
   return (
     <div className="relative">
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
           type="text"
-          value={searchQuery}
-          onChange={(e) => onSearch(e.target.value)}
+          value={localQuery}
+          onChange={handleInputChange}
           placeholder="Søk etter produkt..."
           className="w-full pl-12 pr-10 py-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none text-gray-800 dark:text-white placeholder-gray-400"
         />
-        {searchQuery && (
+        {localQuery && (
           <button
-            onClick={onClear}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            onClick={handleClear}
+            aria-label="Tøm søkefelt"
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-full"
           >
             <X className="w-5 h-5" />
           </button>

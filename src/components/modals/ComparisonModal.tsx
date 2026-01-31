@@ -1,8 +1,10 @@
 'use client';
 
 import { X, ArrowLeftRight, Plus, Leaf } from 'lucide-react';
+import Image from 'next/image';
 import { ProductData } from '@/lib/openfoodfacts';
 import { GrønnScoreResult, getScoreColor } from '@/lib/scoring';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface ScanResult {
   product: ProductData;
@@ -28,14 +30,16 @@ export default function ComparisonModal({
   onAddToComparison,
   onRemoveFromComparison,
 }: ComparisonModalProps) {
+  const focusTrapRef = useFocusTrap(isOpen, onClose);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
+      <div ref={focusTrapRef} role="dialog" aria-modal="true" aria-labelledby="comparison-title" className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-lg max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <h2 id="comparison-title" className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <ArrowLeftRight className="w-5 h-5" />
               Sammenlign produkter
             </h2>
@@ -56,9 +60,9 @@ export default function ComparisonModal({
                 <div key={index} className="p-4 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl min-h-[200px] flex flex-col items-center justify-center">
                   {product ? (
                     <div className="text-center w-full">
-                      <div className="w-16 h-16 mx-auto mb-2 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
+                      <div className="w-16 h-16 mx-auto mb-2 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden relative">
                         {product.product.imageUrl ? (
-                          <img src={product.product.imageUrl} alt="" className="w-full h-full object-contain" />
+                          <Image src={product.product.imageUrl} alt={product.product.name} fill sizes="64px" className="object-contain" />
                         ) : (
                           <Leaf className="w-8 h-8 text-gray-400 m-4" />
                         )}
@@ -97,9 +101,9 @@ export default function ComparisonModal({
                   disabled={compareProducts.some(p => p.product.barcode === result.product.barcode) || compareProducts.length >= 2}
                   className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0 relative">
                     {result.product.imageUrl ? (
-                      <img src={result.product.imageUrl} alt="" className="w-full h-full object-contain" />
+                      <Image src={result.product.imageUrl} alt={result.product.name} fill sizes="40px" className="object-contain" />
                     ) : (
                       <Leaf className="w-5 h-5 text-gray-400 m-2.5" />
                     )}

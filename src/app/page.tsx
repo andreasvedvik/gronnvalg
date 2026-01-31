@@ -304,7 +304,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 to-white dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <header className={`header-sticky px-6 pt-8 pb-4 ${isScrolled ? 'scrolled' : ''}`}>
+      <header className={`header-sticky px-6 pt-safe pb-4 ${isScrolled ? 'scrolled' : ''}`}>
         <div className="flex items-center justify-between animate-fade-in-up stagger-1">
           <div>
             <h1 className="text-display text-gray-900 dark:text-white flex items-center gap-2">
@@ -321,7 +321,7 @@ export default function Home() {
 
             <button
               onClick={toggleDarkMode}
-              className="w-11 h-11 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+              className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
               aria-label={darkMode ? t.lightMode : t.darkMode}
             >
               {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-600" />}
@@ -329,7 +329,7 @@ export default function Home() {
 
             <button
               onClick={() => setShowShoppingList(true)}
-              className="relative w-11 h-11 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+              className="relative w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
               aria-label={t.shoppingList}
             >
               <ShoppingCart className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -342,7 +342,7 @@ export default function Home() {
 
             <Link
               href="/om"
-              className="w-11 h-11 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+              className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
               aria-label={t.aboutUs}
             >
               <Info className="w-5 h-5 text-green-600 dark:text-green-400" />

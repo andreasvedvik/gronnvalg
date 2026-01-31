@@ -75,7 +75,8 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 z-10 rounded-t-3xl">
           <button
             onClick={onClose}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            aria-label={t.close}
+            className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
           >
             <X className="w-5 h-5 text-gray-600" />
           </button>
@@ -90,8 +91,8 @@ export default function ProductCard({ product, score, onClose, alternatives = []
           )}
           <button
             onClick={handleShare}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-            aria-label={language === 'nb' ? 'Del' : 'Share'}
+            className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            aria-label={t.export}
           >
             <Share2 className="w-5 h-5 text-gray-600" />
           </button>
@@ -101,12 +102,14 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         <div className="bg-gradient-to-b from-green-50 to-white px-6 py-6">
           <div className="flex items-start gap-4">
             {/* Product Image */}
-            <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm flex-shrink-0">
+            <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm flex-shrink-0 relative">
               {product.imageUrl ? (
-                <img
+                <Image
                   src={product.imageUrl}
                   alt={product.name}
-                  className="w-full h-full object-contain"
+                  fill
+                  sizes="96px"
+                  className="object-contain"
                 />
               ) : (
                 <span className="text-4xl">📦</span>
@@ -445,12 +448,14 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-gray-100">
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-gray-100 relative">
                       {storePrice.storeLogo ? (
-                        <img
+                        <Image
                           src={storePrice.storeLogo}
                           alt={storePrice.storeName}
-                          className="w-8 h-8 object-contain"
+                          width={32}
+                          height={32}
+                          className="object-contain"
                         />
                       ) : (
                         <Store className="w-5 h-5 text-gray-400" />
@@ -510,13 +515,14 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                     onClick={() => onSelectProduct?.(alt.barcode)}
                     className="w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer text-left"
                   >
-                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                       {alt.imageUrl ? (
-                        <img
+                        <Image
                           src={alt.imageUrl}
                           alt={alt.name}
-                          className="w-full h-full object-contain"
-                          loading="lazy"
+                          fill
+                          sizes="48px"
+                          className="object-contain"
                         />
                       ) : (
                         <span className="text-2xl">📦</span>

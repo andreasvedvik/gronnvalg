@@ -2,8 +2,10 @@
 
 import { X, ShoppingCart, Plus, Check, Trash2, Search, Loader2, Share2, Download } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { ProductData } from '@/lib/openfoodfacts';
 import { useLanguage } from '@/lib/i18n';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface ShoppingItem {
   id: string;
@@ -33,6 +35,7 @@ export default function ShoppingListModal({
   onClearCompleted,
 }: ShoppingListModalProps) {
   const { t } = useLanguage();
+  const focusTrapRef = useFocusTrap(isOpen, onClose);
   const [newItem, setNewItem] = useState('');
   const [searchResults, setSearchResults] = useState<ProductData[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -123,10 +126,10 @@ export default function ShoppingListModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
+      <div ref={focusTrapRef} role="dialog" aria-modal="true" aria-labelledby="shopping-list-title" className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md max-h-[80vh] overflow-auto" onClick={e => e.stopPropagation()}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <h2 id="shopping-list-title" className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <ShoppingCart className="w-5 h-5" />
               {t.shoppingList}
             </h2>
@@ -173,12 +176,14 @@ export default function ShoppingListModal({
                     onClick={() => handleSelectProduct(product)}
                     className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left border-b border-gray-100 dark:border-gray-700 last:border-0"
                   >
-                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                       {product.imageUrl ? (
-                        <img
+                        <Image
                           src={product.imageUrl}
                           alt={product.name}
-                          className="w-full h-full object-contain"
+                          fill
+                          sizes="40px"
+                          className="object-contain"
                         />
                       ) : (
                         <span className="text-xl">📦</span>
@@ -243,11 +248,13 @@ export default function ShoppingListModal({
 
                   {/* Show product image if available */}
                   {item.imageUrl && (
-                    <div className="w-8 h-8 bg-white dark:bg-gray-600 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                      <img
+                    <div className="w-8 h-8 bg-white dark:bg-gray-600 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+                      <Image
                         src={item.imageUrl}
                         alt={item.name}
-                        className="w-full h-full object-contain"
+                        fill
+                        sizes="32px"
+                        className="object-contain"
                       />
                     </div>
                   )}

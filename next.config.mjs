@@ -10,6 +10,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'world.openfoodfacts.org',
       },
+      {
+        protocol: 'https',
+        hostname: 'static.openfoodfacts.org',
+      },
     ],
   },
 };
