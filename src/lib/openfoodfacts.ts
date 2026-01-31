@@ -48,38 +48,49 @@ export function getCacheStats(): { products: number; searches: number } {
 // ===== NORWEGIAN TEXT NORMALIZATION =====
 // Fix common ASCII representations of Norwegian characters
 const norwegianWordMappings: Record<string, string> = {
+  // Common typos and misspellings
+  'youghurt': 'yoghurt',  // Common typo in databases
+  'joghurt': 'yoghurt',   // German spelling sometimes seen
+  'yogourt': 'yoghurt',   // French spelling sometimes seen
   // Common food words with æ
   'baer': 'bær',
   'aerter': 'ærter',
-  'laerer': 'lærer',
-  'vaer': 'vær',
-  'kaere': 'kjære',
+  'paere': 'pære',
+  'vaere': 'være',
   // Common food words with ø
   'kjoett': 'kjøtt',
   'broed': 'brød',
   'smoer': 'smør',
   'floete': 'fløte',
+  'roem': 'røm',
+  'roemme': 'rømme',
   'noetter': 'nøtter',
   'roedbet': 'rødbete',
+  'loeek': 'løk',
   'groenn': 'grønn',
   'groent': 'grønt',
   'groennsaker': 'grønnsaker',
   'oekologisk': 'økologisk',
   'oel': 'øl',
   // Common food words with å
-  'graasvin': 'gråsvin',
   'raa': 'rå',
+  'paasmurt': 'påsmurt',
+  'paalegg': 'pålegg',
   'blaabaer': 'blåbær',
-  'staa': 'stå',
-  'gaa': 'gå',
-  'maal': 'mål',
-  // Brand-specific fixes
-  'tine baer': 'tine bær',
+  'blaaber': 'blåbær',
+  'aapnet': 'åpnet',
+  // Berry names
   'jordbaer': 'jordbær',
   'bringebaer': 'bringebær',
-  'tranbaer': 'tranebær',
+  'tranebaer': 'tranebær',
   'multebaer': 'multebær',
   'tyttbaer': 'tyttebær',
+  'skogsbaer': 'skogsbær',
+  'stikkelbaer': 'stikkelsbær',
+  'solbaer': 'solbær',
+  'ripsbaer': 'ripsbær',
+  // Product-specific fixes
+  'tine baer': 'tine bær',
 };
 
 function normalizeNorwegianText(text: string): string {
@@ -412,10 +423,19 @@ const CATEGORY_MAPPINGS: Record<string, string[]> = {
   'brus': ['sodas', 'colas', 'soft drinks', 'brus'],
   'soft drink': ['sodas', 'soft drinks', 'brus'],
   'carbonated': ['sodas', 'carbonated drinks', 'brus'],
-  // Dairy
+  // Dairy - Yoghurt (multiple spellings!)
+  'yoghurt': ['yogurts', 'yoghurt', 'yogurt', 'dairy desserts'],
+  'yogurt': ['yogurts', 'yoghurt', 'yogurt', 'dairy desserts'],
+  'youghurt': ['yogurts', 'yoghurt', 'yogurt', 'dairy desserts'], // common misspelling
+  'skyr': ['yogurts', 'skyr', 'dairy desserts'],
+  'biola': ['yogurts', 'fermented milk', 'dairy drinks'],
+  'kefir': ['yogurts', 'fermented milk', 'kefir'],
+  // Dairy - Milk
   'milk': ['milk', 'melk'],
   'melk': ['milk', 'melk'],
-  'yogurt': ['yogurt', 'yoghurt'],
+  'fløte': ['cream', 'fløte'],
+  'rømme': ['sour cream', 'rømme'],
+  // Dairy - Cheese
   'cheese': ['cheese', 'ost'],
   'ost': ['cheese', 'ost'],
   // Snacks
@@ -432,6 +452,15 @@ const CATEGORY_MAPPINGS: Record<string, string[]> = {
   'kjøtt': ['meat', 'kjøtt'],
   'chicken': ['chicken', 'kylling'],
   'kylling': ['chicken', 'kylling'],
+  // Fish
+  'fisk': ['fish', 'fisk', 'seafood'],
+  'laks': ['salmon', 'laks', 'fish'],
+  // Juice and drinks
+  'juice': ['juice', 'juices', 'fruit juices'],
+  'smoothie': ['smoothies', 'fruit drinks'],
+  // Water (to avoid mixing with other categories)
+  'vann': ['water', 'vann'],
+  'water': ['water', 'vann'],
 };
 
 // Find the best category for searching alternatives
@@ -439,16 +468,35 @@ function getBestSearchCategory(productName: string, categories: string): string 
   const nameLower = productName.toLowerCase();
   const categoriesLower = categories.toLowerCase();
 
-  // Check product name first for specific product types
-  for (const [keyword, _mappings] of Object.entries(CATEGORY_MAPPINGS)) {
-    if (nameLower.includes(keyword)) {
-      return keyword;
-    }
+  // Yoghurt detection - handle all spelling variations first
+  if (nameLower.includes('yoghurt') || nameLower.includes('yogurt') || nameLower.includes('youghurt') ||
+      nameLower.includes('skyr') || nameLower.includes('biola')) {
+    return 'yogurts'; // Use the Open Food Facts category name
+  }
+
+  // Kefir detection
+  if (nameLower.includes('kefir')) {
+    return 'fermented milk';
   }
 
   // Check if it's a cola/soda specifically
-  if (nameLower.includes('cola') || nameLower.includes('zero') || nameLower.includes('pepsi') || nameLower.includes('fanta') || nameLower.includes('sprite')) {
+  if (nameLower.includes('cola') || nameLower.includes('pepsi') || nameLower.includes('fanta') ||
+      nameLower.includes('sprite') || nameLower.includes('brus') || nameLower.includes('soda')) {
     return 'sodas';
+  }
+
+  // Check if it's water
+  if (nameLower.includes('vann') || nameLower.includes('water') || nameLower.includes('imsdal') ||
+      nameLower.includes('farris') || nameLower.includes('olden')) {
+    return 'water';
+  }
+
+  // Check product name for other specific product types
+  for (const [keyword, mappings] of Object.entries(CATEGORY_MAPPINGS)) {
+    if (nameLower.includes(keyword)) {
+      // Return the first mapping which is usually the best Open Food Facts category
+      return mappings[0] || keyword;
+    }
   }
 
   // Parse categories and find most specific one
@@ -456,9 +504,10 @@ function getBestSearchCategory(productName: string, categories: string): string 
 
   // Prefer more specific categories (longer names or containing specific keywords)
   const specificCategories = categoryList.filter(c =>
+    c.includes('yogurt') || c.includes('yoghurt') || c.includes('dairy') ||
     c.includes('cola') || c.includes('soda') || c.includes('brus') ||
-    c.includes('chips') || c.includes('chocolate') || c.includes('yogurt') ||
-    c.includes('cheese') || c.includes('bread') || c.includes('meat')
+    c.includes('chips') || c.includes('chocolate') || c.includes('cheese') ||
+    c.includes('bread') || c.includes('meat') || c.includes('milk')
   );
 
   if (specificCategories.length > 0) {
@@ -466,7 +515,7 @@ function getBestSearchCategory(productName: string, categories: string): string 
   }
 
   // Fall back to first category, but try to avoid overly generic ones
-  const genericCategories = ['beverages', 'drinks', 'food', 'drikkevarer', 'mat'];
+  const genericCategories = ['beverages', 'drinks', 'food', 'drikkevarer', 'mat', 'snacks'];
   const nonGeneric = categoryList.find(c => !genericCategories.some(g => c.includes(g)));
 
   return nonGeneric || categoryList[0] || categories.split(',')[0]?.trim() || '';
