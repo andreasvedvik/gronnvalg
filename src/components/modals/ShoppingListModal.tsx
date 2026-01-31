@@ -168,52 +168,62 @@ export default function ShoppingListModal({
             </div>
 
             {/* Search suggestions dropdown */}
-            {showSuggestions && searchResults.length > 0 && (
+            {showSuggestions && (
               <div className="absolute top-full left-0 right-12 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 max-h-80 overflow-y-auto">
-                {searchResults.map((product) => (
-                  <button
-                    key={product.barcode}
-                    onClick={() => handleSelectProduct(product)}
-                    className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left border-b border-gray-100 dark:border-gray-700 last:border-0"
-                  >
-                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 relative">
-                      {product.imageUrl ? (
-                        <Image
-                          src={product.imageUrl}
-                          alt={product.name}
-                          fill
-                          sizes="40px"
-                          className="object-contain"
-                        />
-                      ) : (
-                        <span className="text-xl">📦</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                        {product.name}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {product.brand}
-                        {product.isNorwegian && ' 🇳🇴'}
-                      </p>
-                    </div>
-                    <Plus className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  </button>
-                ))}
-
-                {/* Option to add custom item */}
-                <button
-                  onClick={handleAdd}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-green-50 dark:hover:bg-green-900/20 text-left text-green-600"
-                >
-                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                    <Plus className="w-5 h-5" />
+                {searchResults.length > 0 ? (
+                  <>
+                    {searchResults.map((product) => (
+                      <button
+                        key={product.barcode}
+                        onClick={() => handleSelectProduct(product)}
+                        className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-left border-b border-gray-100 dark:border-gray-700 last:border-0"
+                      >
+                        <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+                          {product.imageUrl ? (
+                            <Image
+                              src={product.imageUrl}
+                              alt={product.name}
+                              fill
+                              sizes="40px"
+                              className="object-contain"
+                            />
+                          ) : (
+                            <span className="text-xl">🛒</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {product.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {product.brand}
+                            {product.isNorwegian && ' 🇳🇴'}
+                          </p>
+                        </div>
+                        <Plus className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      </button>
+                    ))}
+                  </>
+                ) : !isSearching && (
+                  <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                    <p className="text-sm">{t.noNorwegianProductsFound || 'Ingen produkter funnet'}</p>
                   </div>
-                  <span className="text-sm font-medium">
-                    {t.addItem} "{newItem}" {t.addCustomItem}
-                  </span>
-                </button>
+                )}
+
+                {/* Option to add custom item - always show when there's input */}
+                {newItem.trim() && (
+                  <button
+                    onClick={handleAdd}
+                    className="w-full flex items-center gap-3 p-3 hover:bg-green-50 dark:hover:bg-green-900/20 text-left text-green-600 border-t border-gray-100 dark:border-gray-700"
+                  >
+                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                      <Plus className="w-5 h-5" />
+                    </div>
+                    <span className="text-sm font-medium">
+                      {t.addItem || 'Legg til'} "{newItem}"
+                    </span>
+                  </button>
+                )}
               </div>
             )}
           </div>
