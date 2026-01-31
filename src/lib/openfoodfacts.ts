@@ -373,7 +373,7 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
     setCache(productCache, barcode, null);
     return null;
   } catch (error) {
-    console.error('Error fetching product:', error);
+    // Error fetching product - return null silently
     return null;
   }
 }
@@ -603,10 +603,67 @@ export async function searchAlternatives(category: string, limit: number = 5, pr
     // Cache empty result
     setCache(searchCache, cacheKey, []);
     return [];
-  } catch (error) {
-    console.error('Error searching alternatives:', error);
+  } catch {
     return [];
   }
+}
+
+// Calculate relevance score for search results
+// Higher score = more relevant (actual product vs flavored product)
+function calculateSearchRelevance(product: any, query: string): number {
+  const queryLower = query.toLowerCase().trim();
+  const nameLower = (product.product_name || '').toLowerCase();
+  const categoryLower = (product.categories || '').toLowerCase();
+  const brand = (product.brands || '').toLowerCase();
+
+  let score = 0;
+
+  // 1. Name matching (most important)
+  // Exact match or name starts with query - highest priority
+  if (nameLower === queryLower || nameLower.startsWith(queryLower + ' ')) {
+    score += 100;
+  }
+  // Name contains query as a whole word (not as flavor/ingredient)
+  else if (new RegExp(`\\b${queryLower}\\b`).test(nameLower)) {
+    // Check if it's the main product or just a flavor
+    const flavorIndicators = ['smak', 'flavor', 'flavour', 'med', 'with', '-smak', 'chips', 'snacks', 'dressing', 'saus', 'sauce'];
+    const isLikelyFlavor = flavorIndicators.some(indicator =>
+      nameLower.includes(indicator) && !nameLower.startsWith(queryLower)
+    );
+    score += isLikelyFlavor ? 20 : 60;
+  }
+  // Query appears somewhere in name
+  else if (nameLower.includes(queryLower)) {
+    score += 10;
+  }
+
+  // 2. Category matching - if category contains query, it's likely the actual product
+  const produceCategories = ['vegetables', 'grønnsaker', 'fruits', 'frukt', 'fresh', 'fersk', 'produce', 'råvarer'];
+  const snackCategories = ['chips', 'snacks', 'crisps', 'crackers', 'godteri', 'candy'];
+
+  if (categoryLower.includes(queryLower)) {
+    score += 40; // Category matches query = likely the actual product
+  }
+  if (produceCategories.some(cat => categoryLower.includes(cat))) {
+    score += 30; // Fresh produce gets priority
+  }
+  if (snackCategories.some(cat => categoryLower.includes(cat))) {
+    score -= 20; // Snacks/chips get lower priority when searching for vegetables
+  }
+
+  // 3. NOVA group - less processed = higher priority
+  const novaGroup = product.nova_group || 0;
+  if (novaGroup === 1) score += 25; // Unprocessed
+  else if (novaGroup === 2) score += 15; // Minimally processed
+  else if (novaGroup === 3) score += 5; // Processed
+  else if (novaGroup === 4) score -= 10; // Ultra-processed
+
+  // 4. Brand matching (if searching for a brand)
+  if (brand.includes(queryLower)) {
+    score += 30;
+  }
+
+  return score;
 }
 
 // Search for products by name
@@ -675,32 +732,36 @@ export async function searchProducts(query: string, limit: number = 10): Promise
     const strictData = strictResponse.ok ? await strictResponse.json() : { products: [] };
     const broaderData = broaderResponse.ok ? await broaderResponse.json() : { products: [] };
 
-    const strictProducts = parseProducts(strictData.products || []);
-    const broaderProducts = parseProducts(broaderData.products || []);
-
-    // Combine: strictly Norwegian tagged first, then other products from Norwegian database
+    // Combine raw products and remove duplicates
     const seenBarcodes = new Set<string>();
-    const combined: ProductData[] = [];
+    const allRawProducts: any[] = [];
 
-    // Add products explicitly tagged with Norway first
-    for (const product of strictProducts) {
-      if (!seenBarcodes.has(product.barcode)) {
-        seenBarcodes.add(product.barcode);
-        combined.push(product);
+    // Add strictly Norwegian products first (they get a bonus)
+    for (const product of (strictData.products || [])) {
+      if (product.code && !seenBarcodes.has(product.code)) {
+        seenBarcodes.add(product.code);
+        allRawProducts.push({ ...product, _isStrictNorwegian: true });
       }
     }
 
-    // Add other products from Norwegian database (scanned/available in Norway)
-    for (const product of broaderProducts) {
-      if (!seenBarcodes.has(product.barcode)) {
-        seenBarcodes.add(product.barcode);
-        combined.push(product);
+    // Add broader products
+    for (const product of (broaderData.products || [])) {
+      if (product.code && !seenBarcodes.has(product.code)) {
+        seenBarcodes.add(product.code);
+        allRawProducts.push(product);
       }
     }
 
-    return combined.slice(0, limit);
-  } catch (error) {
-    console.error('Error searching products:', error);
+    // Sort by relevance score (actual product > flavored product)
+    const sortedProducts = allRawProducts
+      .map(p => ({ product: p, relevance: calculateSearchRelevance(p, query) + (p._isStrictNorwegian ? 5 : 0) }))
+      .sort((a, b) => b.relevance - a.relevance)
+      .slice(0, limit)
+      .map(item => item.product);
+
+    // Parse the sorted products
+    return parseProducts(sortedProducts);
+  } catch {
     return [];
   }
 }
@@ -804,7 +865,7 @@ export async function searchSimilarProducts(
     setCache(searchCache, cacheKey, norwegianProducts);
     return norwegianProducts;
   } catch (error) {
-    console.error('Error searching similar products:', error);
+    // Error searching similar products - return empty array
     return [];
   }
 }
@@ -908,7 +969,7 @@ async function searchByNameKeywordsNorwegian(
 
     return norwegianProducts;
   } catch (error) {
-    console.error('Error in keyword search:', error);
+    // Error in keyword search - return empty array
     return [];
   }
 }
