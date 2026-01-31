@@ -748,9 +748,21 @@ export async function searchSimilarProducts(
       return await searchByNameKeywordsNorwegian(product.name, product.barcode, limit);
     }
 
+    const validEcoscoreGrades = ['a', 'b', 'c', 'd', 'e'];
     const norwegianProducts = data.products
       .filter((p: any) => p.product_name && p.code !== product.barcode) // Exclude the scanned product
       .filter((p: any) => isProductNorwegian(p)) // KUN norske produkter
+      // Sort: products with valid ecoscore first, then by ecoscore grade (a > b > c > d > e > unknown)
+      .sort((a: any, b: any) => {
+        const aHasScore = validEcoscoreGrades.includes(a.ecoscore_grade);
+        const bHasScore = validEcoscoreGrades.includes(b.ecoscore_grade);
+        if (aHasScore && !bHasScore) return -1;
+        if (!aHasScore && bHasScore) return 1;
+        if (aHasScore && bHasScore) {
+          return validEcoscoreGrades.indexOf(a.ecoscore_grade) - validEcoscoreGrades.indexOf(b.ecoscore_grade);
+        }
+        return 0;
+      })
       .slice(0, limit)
       .map((p: any) => {
         const ecoscoreData = p.ecoscore_data;
@@ -844,9 +856,21 @@ async function searchByNameKeywordsNorwegian(
       return [];
     }
 
+    const validEcoscoreGrades = ['a', 'b', 'c', 'd', 'e'];
     const norwegianProducts = data.products
       .filter((p: any) => p.product_name && p.code !== excludeBarcode)
       .filter((p: any) => isProductNorwegian(p)) // KUN norske produkter
+      // Sort: products with valid ecoscore first
+      .sort((a: any, b: any) => {
+        const aHasScore = validEcoscoreGrades.includes(a.ecoscore_grade);
+        const bHasScore = validEcoscoreGrades.includes(b.ecoscore_grade);
+        if (aHasScore && !bHasScore) return -1;
+        if (!aHasScore && bHasScore) return 1;
+        if (aHasScore && bHasScore) {
+          return validEcoscoreGrades.indexOf(a.ecoscore_grade) - validEcoscoreGrades.indexOf(b.ecoscore_grade);
+        }
+        return 0;
+      })
       .slice(0, limit)
       .map((p: any) => {
         const ecoscoreData = p.ecoscore_data;

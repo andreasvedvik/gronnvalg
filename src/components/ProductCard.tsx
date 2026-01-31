@@ -531,18 +531,24 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium text-gray-900 truncate">{alt.name}</span>
-                        <div
-                          className={`px-2 py-0.5 ${getScoreColor(
-                            alt.ecoscore.grade === 'a' ? 90 :
-                            alt.ecoscore.grade === 'b' ? 70 :
-                            alt.ecoscore.grade === 'c' ? 50 :
-                            alt.ecoscore.grade === 'd' ? 30 : 20
-                          )} rounded-full flex-shrink-0`}
-                        >
-                          <span className="text-white text-sm font-bold">
-                            {alt.ecoscore.grade?.toUpperCase() || '?'}
-                          </span>
-                        </div>
+                        {['a', 'b', 'c', 'd', 'e'].includes(alt.ecoscore.grade) ? (
+                          <div
+                            className={`px-2 py-0.5 ${getScoreColor(
+                              alt.ecoscore.grade === 'a' ? 90 :
+                              alt.ecoscore.grade === 'b' ? 70 :
+                              alt.ecoscore.grade === 'c' ? 50 :
+                              alt.ecoscore.grade === 'd' ? 30 : 20
+                            )} rounded-full flex-shrink-0`}
+                          >
+                            <span className="text-white text-sm font-bold">
+                              {alt.ecoscore.grade.toUpperCase()}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="px-2 py-0.5 bg-gray-300 rounded-full flex-shrink-0">
+                            <span className="text-gray-600 text-sm font-bold">?</span>
+                          </div>
+                        )}
                       </div>
                       <p className="text-xs text-gray-500 truncate">{alt.brand}</p>
                     </div>
