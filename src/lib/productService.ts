@@ -362,60 +362,120 @@ function searchCommonGroceries(query: string, limit: number = 10): ProductData[]
   return matches;
 }
 
+// Calculate relevance score for shopping list search
+// Prioritizes actual products over flavored/ingredient mentions
+function calculateShoppingRelevance(product: ProductData, query: string): number {
+  const queryLower = query.toLowerCase().trim();
+  const nameLower = product.name.toLowerCase();
+  const categoryLower = product.category.toLowerCase();
+
+  let score = 0;
+
+  // 1. Exact match or name starts with query - highest priority (actual product)
+  if (nameLower === queryLower) {
+    score += 200; // Perfect match
+  } else if (nameLower.startsWith(queryLower + ' ') || nameLower.startsWith(queryLower)) {
+    score += 150; // Name starts with query
+  }
+  // Name IS the query (for common groceries like "Banan", "Eple")
+  else if (queryLower === nameLower.split(' ')[0]) {
+    score += 140;
+  }
+  // Query appears as a whole word in name (not as flavor)
+  else if (new RegExp(`\\b${queryLower}\\b`).test(nameLower)) {
+    // Check if it's likely a flavor/ingredient, not the main product
+    const flavorIndicators = ['smak', 'med', 'og', '&', 'smoothie', 'shake', 'yoghurt', 'skyr', 'juice', 'drikke'];
+    const isLikelyFlavor = flavorIndicators.some(indicator => nameLower.includes(indicator));
+    score += isLikelyFlavor ? 30 : 100;
+  }
+  // Query appears somewhere in name
+  else if (nameLower.includes(queryLower)) {
+    score += 20;
+  }
+
+  // 2. Category bonus - fresh produce categories get priority
+  const produceCategories = ['frukt', 'grønnsaker', 'vegetables', 'fruits', 'fersk', 'fresh'];
+  const processedCategories = ['meieri', 'dairy', 'drikke', 'beverage', 'snacks'];
+
+  if (produceCategories.some(cat => categoryLower.includes(cat))) {
+    score += 50;
+  }
+  if (processedCategories.some(cat => categoryLower.includes(cat))) {
+    score -= 10;
+  }
+
+  // 3. NOVA group bonus - less processed = higher score
+  if (product.novaGroup === 1) score += 30;
+  else if (product.novaGroup === 2) score += 15;
+  else if (product.novaGroup === 4) score -= 20;
+
+  // 4. Local common grocery items get a big boost (they're the actual products)
+  if (product.barcode.startsWith('local-')) {
+    score += 100;
+  }
+
+  return score;
+}
+
 /**
  * Unified search function - prioritizes Kassalapp (Norwegian stores) over Open Food Facts
  * This gives products from: REMA, Kiwi, Meny, SPAR, Coop, Bunnpris, Joker, 7-Eleven, etc.
+ * Results are sorted by relevance (actual products first, flavored products lower)
  */
 export async function searchProductsUnified(query: string, limit: number = 15): Promise<ProductData[]> {
   if (!query || query.length < 2) return [];
 
   try {
-    // Search all sources in parallel (including common groceries as fallback)
+    // Get common grocery matches FIRST (these are the actual products like "Banan", "Eple")
+    const commonMatches = searchCommonGroceries(query, 5);
+
+    // Search all sources in parallel
     const [kassalappResults, offResults] = await Promise.all([
       searchKassalapp(query, limit).catch(() => []),
-      searchOpenFoodFacts(query, limit).catch(() => []), // Increased limit
+      searchOpenFoodFacts(query, limit).catch(() => []),
     ]);
 
     // Convert Kassalapp results to ProductData
     const kassalappProducts = kassalappResults.map(kp => kassalappToProductData(kp));
 
-    // Combine: Kassalapp first (Norwegian store products), then OFF
+    // Combine all results, avoiding duplicates
     const seenBarcodes = new Set<string>();
     const seenNames = new Set<string>();
     const combined: ProductData[] = [];
 
-    // Add Kassalapp products first (these are definitely in Norwegian stores)
+    // Add common grocery matches first (actual products)
+    for (const product of commonMatches) {
+      const nameLower = product.name.toLowerCase();
+      if (!seenNames.has(nameLower)) {
+        seenNames.add(nameLower);
+        seenBarcodes.add(product.barcode);
+        combined.push(product);
+      }
+    }
+
+    // Add Kassalapp products (Norwegian store products)
     for (const product of kassalappProducts) {
       if (!seenBarcodes.has(product.barcode)) {
         seenBarcodes.add(product.barcode);
-        seenNames.add(product.name.toLowerCase());
         combined.push(product);
       }
     }
 
-    // Add Open Food Facts products (might have more eco data)
+    // Add Open Food Facts products
     for (const product of offResults) {
       if (!seenBarcodes.has(product.barcode)) {
         seenBarcodes.add(product.barcode);
-        seenNames.add(product.name.toLowerCase());
         combined.push(product);
       }
     }
 
-    // If we got few or no results, add common grocery suggestions
-    if (combined.length < 5) {
-      const commonMatches = searchCommonGroceries(query, limit - combined.length);
-      for (const product of commonMatches) {
-        // Only add if we don't already have something with a similar name
-        const nameLower = product.name.toLowerCase();
-        if (!seenNames.has(nameLower)) {
-          seenNames.add(nameLower);
-          combined.push(product);
-        }
-      }
-    }
+    // Sort all results by relevance (actual products first, flavored products lower)
+    const sorted = combined
+      .map(product => ({ product, relevance: calculateShoppingRelevance(product, query) }))
+      .sort((a, b) => b.relevance - a.relevance)
+      .map(item => item.product);
 
-    return combined.slice(0, limit);
+    return sorted.slice(0, limit);
   } catch {
     // Fallback to common groceries + Open Food Facts
     const commonMatches = searchCommonGroceries(query, Math.floor(limit / 2));
