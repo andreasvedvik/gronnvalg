@@ -28,8 +28,6 @@ export interface EnrichedProductData extends ProductData {
  * Priority: Kassalapp (Norwegian-specific) → Open Food Facts → Matvaretabellen (enrichment)
  */
 export async function fetchProductUnified(barcode: string): Promise<EnrichedProductData | null> {
-  console.log('🔍 Fetching product from unified sources:', barcode);
-
   const dataSources: DataSources = {
     kassalapp: false,
     openFoodFacts: false,
@@ -48,12 +46,10 @@ export async function fetchProductUnified(barcode: string): Promise<EnrichedProd
 
   if (offResult) {
     dataSources.openFoodFacts = true;
-    console.log('✅ Open Food Facts data found');
   }
 
   if (kassalappResult) {
     dataSources.kassalapp = true;
-    console.log('✅ Kassalapp data found:', kassalappResult.name);
   }
 
   // If we don't have OFF data but have Kassalapp, convert Kassalapp to our format
@@ -63,7 +59,6 @@ export async function fetchProductUnified(barcode: string): Promise<EnrichedProd
 
   // Still no data? Return null
   if (!baseProduct) {
-    console.log('❌ No product data found in any source');
     return null;
   }
 
@@ -81,10 +76,9 @@ export async function fetchProductUnified(barcode: string): Promise<EnrichedProd
     if (matvaretabellenData) {
       dataSources.matvaretabellen = true;
       baseProduct = enrichWithMatvaretabellen(baseProduct, matvaretabellenData);
-      console.log('✅ Matvaretabellen match found:', matvaretabellenData.foodName);
     }
-  } catch (error) {
-    console.log('⚠️ Matvaretabellen lookup failed');
+  } catch {
+    // Matvaretabellen lookup failed - continue without enrichment
   }
 
   // Build enriched product
@@ -273,16 +267,12 @@ export function kassalappToProductData(kp: KassalappProduct): ProductData {
 export async function searchProductsUnified(query: string, limit: number = 15): Promise<ProductData[]> {
   if (!query || query.length < 2) return [];
 
-  console.log('🔍 Unified search:', query);
-
   try {
     // Search both sources in parallel
     const [kassalappResults, offResults] = await Promise.all([
       searchKassalapp(query, limit).catch(() => []),
       searchOpenFoodFacts(query, Math.floor(limit / 2)).catch(() => []),
     ]);
-
-    console.log(`✅ Kassalapp: ${kassalappResults.length} results, OFF: ${offResults.length} results`);
 
     // Convert Kassalapp results to ProductData
     const kassalappProducts = kassalappResults.map(kp => kassalappToProductData(kp));

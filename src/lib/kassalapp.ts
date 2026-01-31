@@ -106,14 +106,12 @@ function getApiKey(): string | null {
 export async function fetchFromKassalapp(ean: string): Promise<KassalappProduct | null> {
   const apiKey = getApiKey();
   if (!apiKey) {
-    console.log('⚠️ Kassalapp API key not configured');
     return null;
   }
 
   // Check cache
   const cached = getCached(ean);
   if (cached !== undefined) {
-    console.log('📦 Kassalapp cache hit:', ean);
     return cached;
   }
 
@@ -136,7 +134,6 @@ export async function fetchFromKassalapp(ean: string): Promise<KassalappProduct 
 
     const result: KassalappResponse = await response.json();
     setCache(ean, result.data);
-    console.log('✅ Kassalapp product found:', result.data.name);
     return result.data;
   } catch (error) {
     console.error('Kassalapp fetch error:', error);

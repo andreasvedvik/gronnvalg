@@ -5,6 +5,7 @@ const OFFLINE_URL = '/offline.html';
 // Assets to cache immediately on install
 const PRECACHE_ASSETS = [
   '/',
+  '/offline.html',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
@@ -13,29 +14,21 @@ const PRECACHE_ASSETS = [
 
 // Install event - cache core assets
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('[SW] Caching core assets');
-        return cache.addAll(PRECACHE_ASSETS);
-      })
+      .then((cache) => cache.addAll(PRECACHE_ASSETS))
       .then(() => self.skipWaiting())
   );
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((name) => name !== CACHE_NAME)
-          .map((name) => {
-            console.log('[SW] Deleting old cache:', name);
-            return caches.delete(name);
-          })
+          .map((name) => caches.delete(name))
       );
     }).then(() => self.clients.claim())
   );
@@ -90,7 +83,7 @@ self.addEventListener('fetch', (event) => {
           .catch(() => {
             // Offline fallback for navigation requests
             if (event.request.mode === 'navigate') {
-              return caches.match('/');
+              return caches.match(OFFLINE_URL);
             }
             return new Response('Offline', { status: 503 });
           });

@@ -51,8 +51,8 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         await navigator.clipboard.writeText(`${shareText}\n${window.location.href}`);
         alert(language === 'nb' ? 'Kopiert til utklippstavle!' : 'Copied to clipboard!');
       }
-    } catch (err) {
-      console.log('Share failed:', err);
+    } catch {
+      // Share failed silently
     }
   };
 
@@ -445,9 +445,16 @@ export default function ProductCard({ product, score, onClose, alternatives = []
             </div>
             <div className="space-y-2">
               {isLoadingExtras && prices.length === 0 ? (
-                <div className="flex items-center justify-center py-4 text-gray-500">
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  <span className="text-sm">{language === 'nb' ? 'Henter priser...' : 'Loading prices...'}</span>
+                <div className="space-y-2 animate-pulse">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-200 rounded-lg" />
+                        <div className="h-4 w-24 bg-gray-200 rounded" />
+                      </div>
+                      <div className="h-5 w-16 bg-gray-200 rounded" />
+                    </div>
+                  ))}
                 </div>
               ) : prices.slice(0, 4).map((storePrice, i) => (
                 <div
@@ -567,14 +574,27 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                 ))}
               </div>
               {norwegianProducts.length === 0 && !isLoadingExtras && (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  {t.noNorwegianProductsFound}
-                </p>
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                    <span className="text-2xl opacity-50">🇳🇴</span>
+                  </div>
+                  <p className="text-sm text-gray-500">
+                    {t.noNorwegianProductsFound}
+                  </p>
+                </div>
               )}
               {norwegianProducts.length === 0 && isLoadingExtras && (
-                <div className="flex items-center justify-center py-4 text-gray-500">
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  <span className="text-sm">{language === 'nb' ? 'Søker etter produkter...' : 'Searching for products...'}</span>
+                <div className="space-y-2 animate-pulse">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-xl">
+                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-3/4 bg-gray-200 rounded" />
+                        <div className="h-3 w-1/2 bg-gray-200 rounded" />
+                      </div>
+                      <div className="w-8 h-6 bg-gray-200 rounded-full" />
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

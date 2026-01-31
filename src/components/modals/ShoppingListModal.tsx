@@ -112,8 +112,8 @@ export default function ShoppingListModal({
         await navigator.clipboard.writeText(text);
         alert(t.copiedToClipboard || 'Kopiert til utklippstavle!');
       }
-    } catch (err) {
-      console.log('Export failed:', err);
+    } catch {
+      // Export failed silently
     }
   };
 
@@ -228,9 +228,17 @@ export default function ShoppingListModal({
 
           {/* Shopping list items */}
           {items.length === 0 ? (
-            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-              {t.shoppingListEmpty}
-            </p>
+            <div className="text-center py-10">
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                <ShoppingCart className="w-8 h-8 text-green-500" />
+              </div>
+              <p className="text-gray-500 dark:text-gray-400 mb-2">
+                {t.shoppingListEmpty}
+              </p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">
+                {t.searchOrAddItem}
+              </p>
+            </div>
           ) : (
             <div className="space-y-2">
               {items.map(item => (

@@ -4,6 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Camera, X, Loader2, FlashlightOff, Flashlight } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 
+// Trigger haptic feedback on supported devices
+const triggerHapticFeedback = () => {
+  if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+    // Short vibration pattern for scan success
+    navigator.vibrate([50, 30, 50]);
+  }
+};
+
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
   onClose: () => void;
@@ -46,16 +54,15 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
 
         // Start continuous scanning
         if (videoRef.current) {
-          codeReader.decodeFromVideoElement(videoRef.current, (result, error) => {
+          codeReader.decodeFromVideoElement(videoRef.current, (result) => {
             if (result) {
               const barcode = result.getText();
-              console.log('Barcode detected:', barcode);
+              triggerHapticFeedback(); // Haptic feedback on scan success
               onScan(barcode);
             }
           });
         }
-      } catch (err) {
-        console.error('Camera error:', err);
+      } catch {
         setHasCamera(false);
         setError(`${t.couldNotStartCamera}. ${t.tryManualInput}.`);
       }

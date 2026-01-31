@@ -272,7 +272,6 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
   // Check cache first
   const cached = getCached(productCache, barcode);
   if (cached !== undefined) {
-    console.log('📦 Cache hit for product:', barcode);
     return cached;
   }
 
@@ -528,13 +527,10 @@ export async function searchAlternatives(category: string, limit: number = 5, pr
   const cacheKey = `alt:${searchCategory}:${limit}`;
   const cached = getCached(searchCache, cacheKey);
   if (cached !== undefined) {
-    console.log('📦 Cache hit for alternatives:', searchCategory);
     return cached;
   }
 
   try {
-    console.log('🔍 Searching alternatives for category:', searchCategory, '(original:', category, ')');
-
     // Search for products in the same category, fetch more to filter for Norwegian
     const searchUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(searchCategory)}&tagtype_1=countries&tag_contains_1=contains&tag_1=norway&sort_by=ecoscore_score&page_size=${limit * 4}&json=1`;
 
@@ -721,13 +717,10 @@ export async function searchSimilarProducts(
   // Check cache first
   const cached = getCached(searchCache, cacheKey);
   if (cached !== undefined) {
-    console.log('📦 Cache hit for similar products:', searchCategory);
     return cached;
   }
 
   try {
-    console.log('🔍 Søker etter lignende norske produkter for:', product.name, '-> kategori:', searchCategory);
-
     // Søk KUN i norsk database med Norway-filter
     const norwegianUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(searchCategory)}&tagtype_1=countries&tag_contains_1=contains&tag_1=norway&sort_by=unique_scans_n&page_size=${limit * 4}&json=1`;
 
@@ -806,8 +799,6 @@ export async function searchSimilarProducts(
           raw: p,
         } as ProductData;
       });
-
-    console.log(`✅ Fant ${norwegianProducts.length} lignende norske produkter`);
 
     // Cache results
     setCache(searchCache, cacheKey, norwegianProducts);
