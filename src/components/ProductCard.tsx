@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ProductData } from '@/lib/openfoodfacts';
 import { GrønnScoreResult, getScoreColor, getScoreTextColor, getGradeEmoji } from '@/lib/scoring';
-import { X, Leaf, Heart, Truck, Package, Award, Recycle, ChevronRight, ExternalLink, AlertCircle, HelpCircle, AlertTriangle, Info, ChevronDown, ChevronUp, Share2, Tag, Store } from 'lucide-react';
+import { X, Leaf, Heart, Truck, Package, Award, Recycle, ChevronRight, ExternalLink, AlertCircle, HelpCircle, AlertTriangle, Info, ChevronDown, ChevronUp, Share2, Tag, Store, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useLanguage } from '@/lib/i18n';
 import { getProductCertifications, CertificationInfo } from '@/lib/certifications';
@@ -24,9 +24,10 @@ interface ProductCardProps {
   similarProducts?: ProductData[]; // KUN norske produkter
   onSelectProduct?: (barcode: string) => void; // Callback for selecting a similar product
   prices?: StorePriceInfo[]; // Price comparison data from Kassalapp
+  isLoadingExtras?: boolean; // True while loading alternatives, similar products, prices
 }
 
-export default function ProductCard({ product, score, onClose, alternatives = [], similarProducts = [], onSelectProduct, prices = [] }: ProductCardProps) {
+export default function ProductCard({ product, score, onClose, alternatives = [], similarProducts = [], onSelectProduct, prices = [], isLoadingExtras = false }: ProductCardProps) {
   const { t, language } = useLanguage();
   const [showCertDetails, setShowCertDetails] = useState(false);
 
@@ -428,19 +429,27 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         </div>
 
         {/* Price Comparison & Store Finder */}
-        {prices.length > 0 && (
+        {(prices.length > 0 || isLoadingExtras) && (
           <div className="mx-4 mt-4 bg-blue-50 rounded-2xl p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-gray-900 flex items-center gap-2">
                 <Tag className="w-4 h-4 text-blue-600" />
                 {t.priceComparison}
+                {isLoadingExtras && prices.length === 0 && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
               </h3>
-              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                {(language === 'nb' ? t.availableAtStores : t.availableAtStores).replace('{count}', prices.length.toString())}
-              </span>
+              {prices.length > 0 && (
+                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                  {(language === 'nb' ? t.availableAtStores : t.availableAtStores).replace('{count}', prices.length.toString())}
+                </span>
+              )}
             </div>
             <div className="space-y-2">
-              {prices.slice(0, 4).map((storePrice, i) => (
+              {isLoadingExtras && prices.length === 0 ? (
+                <div className="flex items-center justify-center py-4 text-gray-500">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  <span className="text-sm">{language === 'nb' ? 'Henter priser...' : 'Loading prices...'}</span>
+                </div>
+              ) : prices.slice(0, 4).map((storePrice, i) => (
                 <div
                   key={`price-${storePrice.storeName}-${i}`}
                   className={`flex items-center justify-between p-3 rounded-xl ${
@@ -483,7 +492,7 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                 </div>
               ))}
             </div>
-            {prices.length > 4 && (
+            {!isLoadingExtras && prices.length > 4 && (
               <a
                 href={`https://kassal.app/produkt/${product.barcode}`}
                 target="_blank"
@@ -501,12 +510,13 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         )}
 
         {/* Lignende norske produkter - kun norske produkter for norske brukere */}
-        {hasNorwegianProducts && (
+        {(hasNorwegianProducts || isLoadingExtras) && (
           <div className="mx-4 mt-4 mb-6">
             <div className="bg-green-50 rounded-2xl p-4">
               <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <span className="text-lg">🇳🇴</span>
                 {product.isNorwegian ? t.similarNorwegianProducts : t.norwegianAlternatives}
+                {isLoadingExtras && <Loader2 className="w-4 h-4 animate-spin text-green-600" />}
               </h3>
               <div className="space-y-2">
                 {norwegianProducts.slice(0, 5).map((alt, i) => (
@@ -556,10 +566,16 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                   </button>
                 ))}
               </div>
-              {norwegianProducts.length === 0 && (
+              {norwegianProducts.length === 0 && !isLoadingExtras && (
                 <p className="text-sm text-gray-500 text-center py-4">
                   {t.noNorwegianProductsFound}
                 </p>
+              )}
+              {norwegianProducts.length === 0 && isLoadingExtras && (
+                <div className="flex items-center justify-center py-4 text-gray-500">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  <span className="text-sm">{language === 'nb' ? 'Søker etter produkter...' : 'Searching for products...'}</span>
+                </div>
               )}
             </div>
           </div>

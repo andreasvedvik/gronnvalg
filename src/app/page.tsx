@@ -95,6 +95,7 @@ export default function Home() {
 
   // Loading state
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isLoadingExtras, setIsLoadingExtras] = useState(false);
 
   // Load data from localStorage on mount
   useEffect(() => {
@@ -129,6 +130,9 @@ export default function Home() {
 
     // Mark initialization as complete
     setIsInitializing(false);
+
+    // Prefetch barcode scanner library for faster scanner startup
+    import('@zxing/browser').catch(() => {});
   }, []);
 
   // Save history to localStorage
@@ -159,7 +163,7 @@ export default function Home() {
     analytics.darkModeToggled(newMode);
   };
 
-  // Handle barcode scan
+  // Handle barcode scan - optimized to show product immediately
   const handleScan = async (barcode: string) => {
     setIsLoading(true);
     setError(null);
@@ -178,13 +182,40 @@ export default function Home() {
 
       const score = calculateGrønnScore(product);
 
-      // Fetch alternatives, similar products, and prices in parallel
-      // Begge gir nå kun norske produkter
-      let alternatives: ProductData[] = [];
-      let similarProducts: ProductData[] = [];
-      let prices: StorePriceInfo[] = [];
+      // Show product immediately with basic data
+      const initialResult: ScanResult = {
+        product,
+        score,
+        alternatives: [],
+        similarProducts: [],
+        prices: [],
+        timestamp: Date.now()
+      };
+      setScanResult(initialResult);
+      setShowScanner(false);
+      setIsLoading(false);
+      analytics.scanCompleted(barcode, score.total);
 
-      // Alltid søk etter lignende norske produkter + priser fra Kassalapp
+      // Add to history immediately (will be updated with extras later)
+      setRecentScans((prev) => {
+        const filtered = prev.filter((r) => r.product.barcode !== barcode);
+        return [initialResult, ...filtered].slice(0, 50);
+      });
+
+      // Load extras in background (non-blocking)
+      setIsLoadingExtras(true);
+      loadProductExtras(product, barcode, initialResult);
+    } catch (err) {
+      console.error('Error scanning:', err);
+      setError(`${t.somethingWentWrong}. ${t.tryAgain}.`);
+      analytics.scanFailed(barcode, 'error');
+      setIsLoading(false);
+    }
+  };
+
+  // Load additional product data in background
+  const loadProductExtras = async (product: ProductData, barcode: string, baseResult: ScanResult) => {
+    try {
       const [altResult, similarResult, kassalappData] = await Promise.all([
         product.category
           ? searchAlternatives(product.raw?.categories || product.category, 5, product.name)
@@ -192,6 +223,10 @@ export default function Home() {
         searchSimilarProducts(product, 8),
         fetchFromKassalapp(barcode),
       ]);
+
+      let alternatives = altResult.filter((a) => a.barcode !== product.barcode);
+      const similarProducts = similarResult.filter((p) => p.barcode !== product.barcode);
+      let prices: StorePriceInfo[] = [];
 
       // Extract prices from Kassalapp if available
       if (kassalappData?.store_prices?.length) {
@@ -204,9 +239,6 @@ export default function Home() {
           }))
           .sort((a, b) => a.price - b.price);
       }
-
-      alternatives = altResult.filter((a) => a.barcode !== product.barcode);
-      similarProducts = similarResult.filter((p) => p.barcode !== product.barcode);
 
       // Apply filters to alternatives
       if (filters.norwegianOnly) {
@@ -224,21 +256,26 @@ export default function Home() {
         );
       }
 
-      const result: ScanResult = { product, score, alternatives, similarProducts, prices, timestamp: Date.now() };
-      setScanResult(result);
-      setShowScanner(false);
-      analytics.scanCompleted(barcode, score.total);
+      // Update the scan result with extras
+      const fullResult: ScanResult = {
+        ...baseResult,
+        alternatives,
+        similarProducts,
+        prices
+      };
 
+      setScanResult(fullResult);
+
+      // Update history with full data
       setRecentScans((prev) => {
         const filtered = prev.filter((r) => r.product.barcode !== barcode);
-        return [result, ...filtered].slice(0, 50);
+        return [fullResult, ...filtered].slice(0, 50);
       });
     } catch (err) {
-      console.error('Error scanning:', err);
-      setError(`${t.somethingWentWrong}. ${t.tryAgain}.`);
-      analytics.scanFailed(barcode, 'error');
+      console.error('Error loading product extras:', err);
+      // Don't show error - product is already displayed
     } finally {
-      setIsLoading(false);
+      setIsLoadingExtras(false);
     }
   };
 
@@ -560,6 +597,7 @@ export default function Home() {
           alternatives={scanResult.alternatives}
           similarProducts={scanResult.similarProducts}
           prices={scanResult.prices}
+          isLoadingExtras={isLoadingExtras}
           onClose={() => setScanResult(null)}
           onSelectProduct={(barcode) => {
             setScanResult(null); // Close current card
