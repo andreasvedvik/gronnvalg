@@ -126,17 +126,14 @@ export async function fetchFromKassalapp(ean: string): Promise<KassalappProduct 
     if (!response.ok) {
       if (response.status === 404) {
         setCache(ean, null);
-        return null;
       }
-      console.error('Kassalapp API error:', response.status);
       return null;
     }
 
     const result: KassalappResponse = await response.json();
     setCache(ean, result.data);
     return result.data;
-  } catch (error) {
-    console.error('Kassalapp fetch error:', error);
+  } catch {
     return null;
   }
 }
@@ -167,8 +164,7 @@ export async function searchKassalapp(query: string, limit: number = 10): Promis
 
     const result: KassalappSearchResponse = await response.json();
     return result.data || [];
-  } catch (error) {
-    console.error('Kassalapp search error:', error);
+  } catch {
     return [];
   }
 }

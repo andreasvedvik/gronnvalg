@@ -213,24 +213,41 @@ export default function Home() {
     }
   };
 
-  // Load additional product data in background
+  // Load additional product data in background - PROGRESSIVELY
   const loadProductExtras = async (product: ProductData, barcode: string, baseResult: ScanResult) => {
-    try {
-      const [altResult, similarResult, kassalappData] = await Promise.all([
-        product.category
-          ? searchAlternatives(product.raw?.categories || product.category, 5, product.name)
-          : Promise.resolve([]),
-        searchSimilarProducts(product, 8),
-        fetchFromKassalapp(barcode),
+    // Track current result state for progressive updates
+    let currentResult = { ...baseResult };
+
+    // Helper to update result progressively
+    const updateResult = (updates: Partial<ScanResult>) => {
+      currentResult = { ...currentResult, ...updates };
+      setScanResult({ ...currentResult });
+      // Update history
+      setRecentScans((prev) => {
+        const filtered = prev.filter((r) => r.product.barcode !== barcode);
+        return [{ ...currentResult }, ...filtered].slice(0, 50);
+      });
+    };
+
+    // Helper for timeout wrapper (5 second timeout for each API call)
+    const withTimeout = <T,>(promise: Promise<T>, ms: number = 5000): Promise<T | null> => {
+      return Promise.race([
+        promise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), ms))
       ]);
+    };
 
-      let alternatives = altResult.filter((a) => a.barcode !== product.barcode);
-      const similarProducts = similarResult.filter((p) => p.barcode !== product.barcode);
-      let prices: StorePriceInfo[] = [];
+    // Start all requests in parallel but handle them individually as they complete
+    const pricesPromise = withTimeout(fetchFromKassalapp(barcode), 4000);
+    const similarPromise = withTimeout(searchSimilarProducts(product, 8), 5000);
+    const alternativesPromise = product.category
+      ? withTimeout(searchAlternatives(product.raw?.categories || product.category, 5, product.name), 5000)
+      : Promise.resolve([]);
 
-      // Extract prices from Kassalapp if available
+    // Handle prices (usually fastest from Kassalapp)
+    pricesPromise.then((kassalappData) => {
       if (kassalappData?.store_prices?.length) {
-        prices = kassalappData.store_prices
+        const prices = kassalappData.store_prices
           .map((sp) => ({
             price: sp.price.current,
             unitPrice: sp.price.unit_price,
@@ -238,45 +255,44 @@ export default function Home() {
             storeLogo: sp.store.logo,
           }))
           .sort((a, b) => a.price - b.price);
+        updateResult({ prices });
       }
+    }).catch(() => {});
 
-      // Apply filters to alternatives
-      if (filters.norwegianOnly) {
-        alternatives = alternatives.filter(a =>
-          a.origin?.toLowerCase().includes('norge') ||
-          a.origin?.toLowerCase().includes('norway')
-        );
+    // Handle similar Norwegian products
+    similarPromise.then((similarResult) => {
+      if (similarResult) {
+        const similarProducts = similarResult.filter((p) => p.barcode !== product.barcode);
+        updateResult({ similarProducts });
       }
-      if (filters.organic) {
-        alternatives = alternatives.filter(a =>
-          a.labels?.some(label =>
-            label.toLowerCase().includes('økologisk') ||
-            label.toLowerCase().includes('organic')
-          )
-        );
+    }).catch(() => {});
+
+    // Handle alternatives
+    alternativesPromise.then((altResult) => {
+      if (altResult) {
+        let alternatives = altResult.filter((a) => a.barcode !== product.barcode);
+        // Apply filters
+        if (filters.norwegianOnly) {
+          alternatives = alternatives.filter(a =>
+            a.origin?.toLowerCase().includes('norge') ||
+            a.origin?.toLowerCase().includes('norway')
+          );
+        }
+        if (filters.organic) {
+          alternatives = alternatives.filter(a =>
+            a.labels?.some(label =>
+              label.toLowerCase().includes('økologisk') ||
+              label.toLowerCase().includes('organic')
+            )
+          );
+        }
+        updateResult({ alternatives });
       }
+    }).catch(() => {});
 
-      // Update the scan result with extras
-      const fullResult: ScanResult = {
-        ...baseResult,
-        alternatives,
-        similarProducts,
-        prices
-      };
-
-      setScanResult(fullResult);
-
-      // Update history with full data
-      setRecentScans((prev) => {
-        const filtered = prev.filter((r) => r.product.barcode !== barcode);
-        return [fullResult, ...filtered].slice(0, 50);
-      });
-    } catch (err) {
-      console.error('Error loading product extras:', err);
-      // Don't show error - product is already displayed
-    } finally {
-      setIsLoadingExtras(false);
-    }
+    // Wait for all to settle (don't block on errors)
+    await Promise.allSettled([pricesPromise, similarPromise, alternativesPromise]);
+    setIsLoadingExtras(false);
   };
 
   // Shopping list handlers
