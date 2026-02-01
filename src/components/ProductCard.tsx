@@ -161,16 +161,28 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 z-10 rounded-t-3xl">
+        <div
+          className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 z-10 rounded-t-3xl"
+          style={{ WebkitTransform: 'translateZ(0)' }} // Force GPU layer for iOS sticky
+        >
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              e.preventDefault();
               onClose();
             }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+            }}
             aria-label={t.close}
-            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
-            style={{ touchAction: 'manipulation' }}
+            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors select-none"
+            style={{
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+              WebkitUserSelect: 'none',
+              cursor: 'pointer'
+            }}
           >
             <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
           </button>
@@ -597,18 +609,33 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
           </a>
         </div>
 
-        {/* Action Button */}
-        <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4">
+        {/* Action Button - Fixed at bottom for reliable mobile touch */}
+        <div
+          className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4 pb-safe"
+          style={{ WebkitTransform: 'translateZ(0)' }} // Force GPU layer for iOS
+        >
           <button
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
               if (onScanAgain) {
                 onScanAgain();
               } else {
                 onClose();
               }
             }}
-            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 active:bg-green-700 transition-colors shadow-lg touch-manipulation"
+            onTouchEnd={(e) => {
+              // Backup touch handler for iOS
+              e.stopPropagation();
+            }}
+            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 active:bg-green-700 transition-colors shadow-lg select-none"
+            style={{
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+              WebkitUserSelect: 'none',
+              cursor: 'pointer'
+            }}
           >
             {t.scanNewProduct}
           </button>
