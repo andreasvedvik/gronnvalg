@@ -1,11 +1,12 @@
 'use client';
 
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState } from 'react';
 import Image from 'next/image';
 import { History, Leaf, ChevronRight, Plus, ArrowLeftRight, Share2 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { ProductData } from '@/lib/openfoodfacts';
 import { GrønnScoreResult, getScoreColor } from '@/lib/scoring';
+import Tooltip from '@/components/Tooltip';
 
 interface ScanResult {
   product: ProductData;
@@ -34,38 +35,55 @@ const ScanHistoryItem = memo(function ScanHistoryItem({
   addToListLabel,
   compareLabel,
 }: ScanHistoryItemProps) {
+  const { language } = useLanguage();
+
+  // Get grade description for tooltip
+  const getGradeDescription = (grade: string, score: number) => {
+    const descriptions: Record<string, { nb: string; en: string }> = {
+      'A': { nb: 'Utmerket miljøvalg', en: 'Excellent eco choice' },
+      'B': { nb: 'Godt miljøvalg', en: 'Good eco choice' },
+      'C': { nb: 'Middels miljøvalg', en: 'Average eco choice' },
+      'D': { nb: 'Mindre bra miljøvalg', en: 'Below average eco choice' },
+      'E': { nb: 'Dårlig miljøvalg', en: 'Poor eco choice' },
+    };
+    const desc = descriptions[grade] || { nb: 'Ukjent', en: 'Unknown' };
+    return `${grade}: ${language === 'nb' ? desc.nb : desc.en} (${score}/100)`;
+  };
+
   return (
-    <div className="w-full flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 card-hover text-left group">
+    <div className="w-full flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-green-200 dark:hover:border-green-800 transition-all duration-200 text-left group">
       <button
         onClick={onSelect}
         className="flex items-center gap-4 flex-1 min-w-0"
       >
-        <div className="w-14 h-14 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 relative">
+        <div className="w-16 h-16 bg-gray-50 dark:bg-gray-700 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 relative ring-1 ring-gray-100 dark:ring-gray-600">
           {result.product.imageUrl ? (
             <Image
               src={result.product.imageUrl}
               alt={result.product.name}
               fill
-              sizes="56px"
-              className="object-contain"
+              sizes="64px"
+              className="object-contain p-1"
             />
           ) : (
-            <Leaf className="w-6 h-6 text-gray-300 dark:text-gray-500" />
+            <Leaf className="w-7 h-7 text-gray-300 dark:text-gray-500" />
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 dark:text-white truncate">
+          <p className="font-semibold text-gray-900 dark:text-white truncate text-base">
             {result.product.name}
           </p>
-          <p className="text-caption text-gray-500 dark:text-gray-400 truncate">
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
             {result.product.brand}
           </p>
         </div>
-        <div
-          className={`w-11 h-11 ${getScoreColor(result.score.total)} rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm`}
-        >
-          <span className="text-white font-bold">{result.score.grade}</span>
-        </div>
+        <Tooltip content={getGradeDescription(result.score.grade, result.score.total)} position="left">
+          <div
+            className={`w-12 h-12 ${getScoreColor(result.score.total)} rounded-xl flex items-center justify-center flex-shrink-0 shadow-md hover:scale-105 transition-transform cursor-help`}
+          >
+            <span className="text-white font-bold text-lg">{result.score.grade}</span>
+          </div>
+        </Tooltip>
       </button>
 
       {/* Action buttons */}

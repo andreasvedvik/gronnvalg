@@ -2,6 +2,7 @@
 
 import { useState, useEffect, lazy, Suspense, memo } from 'react';
 import { Leaf, Scan, Moon, Sun, Info, ShoppingCart, MessageCircle, ExternalLink, Plus, Camera } from 'lucide-react';
+import Tooltip from '@/components/Tooltip';
 import Link from 'next/link';
 
 // Components
@@ -11,7 +12,6 @@ import ProductCard from '@/components/ProductCard';
 import StatsCard from '@/components/StatsCard';
 import WelcomeCard from '@/components/WelcomeCard';
 import HowItWorks from '@/components/HowItWorks';
-import TrustSignals from '@/components/TrustSignals';
 import FilterBar from '@/components/FilterBar';
 import ScanHistory from '@/components/ScanHistory';
 import AppFooter from '@/components/AppFooter';
@@ -382,34 +382,40 @@ export default function Home() {
             {/* Text Size Selector (Accessibility) */}
             <TextSizeSelector />
 
-            <button
-              onClick={toggleDarkMode}
-              className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
-              aria-label={darkMode ? t.lightMode : t.darkMode}
-            >
-              {darkMode ? <Sun className="w-6 h-6 text-yellow-500" /> : <Moon className="w-6 h-6 text-gray-600" />}
-            </button>
+            <Tooltip content={darkMode ? t.lightMode : t.darkMode}>
+              <button
+                onClick={toggleDarkMode}
+                className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+                aria-label={darkMode ? t.lightMode : t.darkMode}
+              >
+                {darkMode ? <Sun className="w-6 h-6 text-yellow-500" /> : <Moon className="w-6 h-6 text-gray-600" />}
+              </button>
+            </Tooltip>
 
-            <button
-              onClick={() => setShowShoppingList(true)}
-              className="relative w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
-              aria-label={t.shoppingList}
-            >
-              <ShoppingCart className="w-6 h-6 text-green-600 dark:text-green-400" />
-              {shoppingList.filter(i => !i.checked).length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {shoppingList.filter(i => !i.checked).length}
-                </span>
-              )}
-            </button>
+            <Tooltip content={t.shoppingList}>
+              <button
+                onClick={() => setShowShoppingList(true)}
+                className="relative w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+                aria-label={t.shoppingList}
+              >
+                <ShoppingCart className="w-6 h-6 text-green-600 dark:text-green-400" />
+                {shoppingList.filter(i => !i.checked).length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    {shoppingList.filter(i => !i.checked).length}
+                  </span>
+                )}
+              </button>
+            </Tooltip>
 
-            <Link
-              href="/om"
-              className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
-              aria-label={t.aboutUs}
-            >
-              <Info className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </Link>
+            <Tooltip content={t.aboutUs}>
+              <Link
+                href="/om"
+                className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+                aria-label={t.aboutUs}
+              >
+                <Info className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </Link>
+            </Tooltip>
           </div>
         </div>
       </header>
@@ -447,7 +453,7 @@ export default function Home() {
           <div className="absolute inset-0 rounded-full animate-pulse-ring" />
           <button
             onClick={() => { setShowScanner(true); setNotFoundBarcode(null); }}
-            className="relative scan-button animate-breathe w-44 h-44 rounded-full flex flex-col items-center justify-center"
+            className="relative scan-button animate-breathe animate-scan-pulse w-44 h-44 rounded-full flex flex-col items-center justify-center"
             aria-label={t.scanProduct}
           >
             <div className="absolute inset-6 border-2 border-white/30 rounded-lg">
@@ -538,9 +544,6 @@ export default function Home() {
 
       {/* How It Works */}
       <HowItWorks onShowScoreInfo={() => setShowScoreInfo(true)} />
-
-      {/* Trust Signals */}
-      <TrustSignals />
 
       {/* Footer */}
       <AppFooter onShowContact={() => setShowContact(true)} />

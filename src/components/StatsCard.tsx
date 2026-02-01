@@ -60,10 +60,22 @@ export default function StatsCard({
           {t.basedOnScans.replace('{count}', String(scanCount))}
         </span>
       </div>
-      <div className="mt-4 h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+      <div className="mt-4 h-3 bg-gradient-to-r from-red-200 via-yellow-200 to-green-200 dark:from-red-900/30 dark:via-yellow-900/30 dark:to-green-900/30 rounded-full overflow-hidden relative">
         <div
-          className={`h-full ${getScoreColor(averageScore)} rounded-full transition-all duration-700 ease-out`}
+          className={`h-full rounded-full transition-all duration-700 ease-out ${
+            averageScore >= 60 ? 'bg-gradient-to-r from-green-400 to-green-500' :
+            averageScore >= 40 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+            'bg-gradient-to-r from-red-400 to-orange-500'
+          }`}
           style={{ width: `${averageScore}%` }}
+        />
+        {/* Score indicator dot */}
+        <div
+          className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white dark:bg-gray-900 rounded-full shadow-md border-2 border-current transition-all duration-700"
+          style={{
+            left: `calc(${averageScore}% - 8px)`,
+            borderColor: averageScore >= 60 ? '#22c55e' : averageScore >= 40 ? '#eab308' : '#ef4444'
+          }}
         />
       </div>
 
