@@ -64,6 +64,23 @@ export interface ScoreBreakdownItem {
 }
 
 /**
+ * CO₂ footprint estimate for a product
+ * @interface CO2Estimate
+ */
+export interface CO2Estimate {
+  /** Estimated grams of CO₂ per 100g of product */
+  gramsPerUnit: number;
+  /** Category used for estimation */
+  category: string;
+  /** Whether this is plant-based (lower impact) */
+  isPlantBased: boolean;
+  /** Confidence level */
+  confidence: 'high' | 'medium' | 'low';
+  /** Human-readable description */
+  description: string;
+}
+
+/**
  * Complete result from the GrønnScore calculation
  * @interface GrønnScoreResult
  */
@@ -81,6 +98,7 @@ export interface GrønnScoreResult {
     norwegian: ScoreBreakdownItem;
     packaging: ScoreBreakdownItem;
     certifications: ScoreBreakdownItem;
+    plantBased: ScoreBreakdownItem;
   };
   /** Health-related scores (Nutri-Score and NOVA) */
   healthScore: {
@@ -90,6 +108,8 @@ export interface GrønnScoreResult {
     nova: number;
     dataAvailable: boolean;
   };
+  /** Estimated CO₂ footprint */
+  co2Estimate: CO2Estimate;
 }
 
 // Norwegian certifications we recognize
@@ -109,6 +129,171 @@ const NORWEGIAN_CERTIFICATIONS = [
 // Countries considered "close" for transport scoring
 const CLOSE_COUNTRIES = ['norway', 'norge', 'sweden', 'sverige', 'denmark', 'danmark', 'finland'];
 const EU_COUNTRIES = ['germany', 'france', 'netherlands', 'spain', 'italy', 'poland', 'belgium'];
+
+// ===== CO₂ ESTIMATES (grams per 100g of product) =====
+// Based on lifecycle assessment data from scientific studies
+const CO2_ESTIMATES: Record<string, { co2: number; label: string }> = {
+  // Animal products (high impact)
+  'beef': { co2: 2500, label: 'Storfekjøtt' },
+  'lamb': { co2: 2400, label: 'Lammekjøtt' },
+  'cheese': { co2: 1100, label: 'Ost' },
+  'pork': { co2: 720, label: 'Svinekjøtt' },
+  'chicken': { co2: 450, label: 'Kylling' },
+  'fish': { co2: 400, label: 'Fisk' },
+  'eggs': { co2: 320, label: 'Egg' },
+  'milk': { co2: 130, label: 'Melk' },
+  'yogurt': { co2: 150, label: 'Yoghurt' },
+  'butter': { co2: 1200, label: 'Smør' },
+  'cream': { co2: 350, label: 'Fløte' },
+  // Plant products (low impact)
+  'vegetables': { co2: 40, label: 'Grønnsaker' },
+  'fruits': { co2: 50, label: 'Frukt' },
+  'legumes': { co2: 70, label: 'Belgfrukter' },
+  'beans': { co2: 70, label: 'Bønner' },
+  'lentils': { co2: 60, label: 'Linser' },
+  'tofu': { co2: 200, label: 'Tofu' },
+  'bread': { co2: 80, label: 'Brød' },
+  'rice': { co2: 270, label: 'Ris' },
+  'pasta': { co2: 120, label: 'Pasta' },
+  'oats': { co2: 60, label: 'Havre' },
+  'nuts': { co2: 30, label: 'Nøtter' },
+  'plantmilk': { co2: 40, label: 'Plantemelk' },
+  // Processed/drinks
+  'chocolate': { co2: 340, label: 'Sjokolade' },
+  'coffee': { co2: 1700, label: 'Kaffe' },
+  'soda': { co2: 50, label: 'Brus' },
+  'juice': { co2: 80, label: 'Juice' },
+  'beer': { co2: 60, label: 'Øl' },
+  'wine': { co2: 120, label: 'Vin' },
+};
+
+// Keywords for detecting plant-based products
+const PLANT_BASED_KEYWORDS = [
+  'vegan', 'vegansk', 'plant-based', 'plantebasert', 'vegetar',
+  'tofu', 'seitan', 'tempeh', 'soya', 'soy', 'oat', 'havre',
+  'almond', 'mandel', 'cashew', 'coconut', 'kokos', 'rice milk',
+  'oatly', 'alpro', 'naturli', 'hälsans kök', 'quorn',
+  'beyond', 'impossible', 'planted', 'redefine', 'v-label'
+];
+
+// Keywords for detecting animal products
+const ANIMAL_KEYWORDS = [
+  'beef', 'biff', 'steak', 'kjøtt', 'meat', 'pork', 'svin', 'bacon',
+  'chicken', 'kylling', 'lamb', 'lam', 'fish', 'fisk', 'salmon', 'laks',
+  'shrimp', 'reke', 'milk', 'melk', 'cheese', 'ost', 'butter', 'smør',
+  'cream', 'fløte', 'egg', 'yogurt', 'yoghurt', 'ham', 'skinke'
+];
+
+/**
+ * Detects if a product is plant-based
+ */
+function isPlantBased(product: ProductData): { isPlantBased: boolean; confidence: 'high' | 'medium' | 'low' } {
+  const searchText = [
+    product.name,
+    product.category,
+    product.ingredients,
+    ...product.labels
+  ].join(' ').toLowerCase();
+
+  // Check for explicit plant-based labels
+  const hasPlantLabel = PLANT_BASED_KEYWORDS.some(kw => searchText.includes(kw));
+  const hasAnimalKeyword = ANIMAL_KEYWORDS.some(kw => searchText.includes(kw));
+
+  if (hasPlantLabel && !hasAnimalKeyword) {
+    return { isPlantBased: true, confidence: 'high' };
+  }
+  if (hasAnimalKeyword) {
+    return { isPlantBased: false, confidence: 'high' };
+  }
+  // Check category
+  const categoryLower = product.category.toLowerCase();
+  if (categoryLower.includes('vegetable') || categoryLower.includes('fruit') ||
+      categoryLower.includes('grønnsak') || categoryLower.includes('frukt')) {
+    return { isPlantBased: true, confidence: 'medium' };
+  }
+
+  return { isPlantBased: false, confidence: 'low' };
+}
+
+/**
+ * Estimates CO₂ footprint based on product category
+ */
+function estimateCO2(product: ProductData): CO2Estimate {
+  const searchText = [product.name, product.category, product.ingredients].join(' ').toLowerCase();
+  const plantStatus = isPlantBased(product);
+
+  // Try to match specific categories
+  for (const [key, data] of Object.entries(CO2_ESTIMATES)) {
+    if (searchText.includes(key)) {
+      return {
+        gramsPerUnit: data.co2,
+        category: data.label,
+        isPlantBased: plantStatus.isPlantBased,
+        confidence: 'medium',
+        description: `~${data.co2}g CO₂/100g (${data.label})`
+      };
+    }
+  }
+
+  // Fallback based on plant-based status
+  if (plantStatus.isPlantBased) {
+    return {
+      gramsPerUnit: 80,
+      category: 'Plantebasert',
+      isPlantBased: true,
+      confidence: 'low',
+      description: '~80g CO₂/100g (plantebasert, estimert)'
+    };
+  }
+
+  return {
+    gramsPerUnit: 300,
+    category: 'Ukjent',
+    isPlantBased: false,
+    confidence: 'low',
+    description: '~300g CO₂/100g (gjennomsnitt, estimert)'
+  };
+}
+
+/**
+ * Calculates plant-based bonus score
+ */
+function getPlantBasedScore(product: ProductData): { score: number; description: string; isPlantBased: boolean } {
+  const status = isPlantBased(product);
+
+  if (status.isPlantBased && status.confidence === 'high') {
+    return { score: 100, description: 'Plantebasert produkt 🌱', isPlantBased: true };
+  }
+  if (status.isPlantBased && status.confidence === 'medium') {
+    return { score: 90, description: 'Sannsynlig plantebasert 🌿', isPlantBased: true };
+  }
+  // Animal products get lower scores based on impact
+  const searchText = [product.name, product.category].join(' ').toLowerCase();
+  if (searchText.includes('beef') || searchText.includes('biff') || searchText.includes('storfekjøtt')) {
+    return { score: 20, description: 'Storfekjøtt (høyt klimaavtrykk)', isPlantBased: false };
+  }
+  if (searchText.includes('lamb') || searchText.includes('lam')) {
+    return { score: 25, description: 'Lammekjøtt (høyt klimaavtrykk)', isPlantBased: false };
+  }
+  if (searchText.includes('cheese') || searchText.includes('ost')) {
+    return { score: 40, description: 'Ost (moderat klimaavtrykk)', isPlantBased: false };
+  }
+  if (searchText.includes('pork') || searchText.includes('svin')) {
+    return { score: 50, description: 'Svinekjøtt (moderat klimaavtrykk)', isPlantBased: false };
+  }
+  if (searchText.includes('chicken') || searchText.includes('kylling')) {
+    return { score: 60, description: 'Kylling (lavere klimaavtrykk)', isPlantBased: false };
+  }
+  if (searchText.includes('fish') || searchText.includes('fisk')) {
+    return { score: 65, description: 'Fisk (moderat klimaavtrykk)', isPlantBased: false };
+  }
+  if (searchText.includes('milk') || searchText.includes('melk') ||
+      searchText.includes('yogurt') || searchText.includes('yoghurt')) {
+    return { score: 55, description: 'Meieriprodukter', isPlantBased: false };
+  }
+
+  return { score: 50, description: 'Ukjent kategori', isPlantBased: false };
+}
 
 function getEcoscoreValue(grade: string): { score: number; available: boolean; description: string } {
   const gradeLower = grade.toLowerCase();
@@ -281,26 +466,52 @@ function getPackagingScore(product: ProductData): { score: number; description: 
   const hasGlass = allTags.some(t => t.includes('glass'));
   const hasPaper = allTags.some(t => t.includes('paper') || t.includes('cardboard') || t.includes('carton'));
   const hasMetal = allTags.some(t => t.includes('aluminium') || t.includes('steel') || t.includes('metal') || t.includes('tin'));
-  const hasPET = allTags.some(t => t.includes('pet') || t.includes('pp') || t.includes('hdpe'));
-  const hasPlastic = allTags.some(t => t.includes('plastic'));
+
+  // Specific plastic types (better differentiation)
+  const hasPET = allTags.some(t => t.includes('pet') || t.includes('polyethylene-terephthalate') || t.includes('01-pet'));
+  const hasHDPE = allTags.some(t => t.includes('hdpe') || t.includes('02-hdpe') || t.includes('high-density'));
+  const hasPP = allTags.some(t => t.includes('-pp') || t.includes('05-pp') || t.includes('polypropylene'));
+  const hasLDPE = allTags.some(t => t.includes('ldpe') || t.includes('04-ldpe') || t.includes('low-density'));
+  const hasPS = allTags.some(t => t.includes('-ps') || t.includes('06-ps') || t.includes('polystyrene'));
+  const hasPVC = allTags.some(t => t.includes('pvc') || t.includes('03-pvc'));
+  const hasOtherPlastic = allTags.some(t => t.includes('plastic') || t.includes('07-other'));
 
   // Return based on best material found
   if (hasGlass) {
-    return { score: 90, description: 'Glassemballasje (resirkulerbar)', available: true, source: 'packaging_tags' };
+    return { score: 90, description: 'Glass (100% resirkulerbar ♻️)', available: true, source: 'packaging_tags' };
   }
   if (hasPaper) {
-    return { score: 85, description: 'Papir/kartong (resirkulerbar)', available: true, source: 'packaging_tags' };
+    return { score: 85, description: 'Papir/kartong (resirkulerbar ♻️)', available: true, source: 'packaging_tags' };
   }
   if (hasMetal) {
     const metalScore = isRecyclable ? 80 : 75;
-    return { score: metalScore, description: 'Metallemballasje (resirkulerbar)', available: true, source: 'packaging_tags' };
+    return { score: metalScore, description: 'Metall/aluminium (resirkulerbar ♻️)', available: true, source: 'packaging_tags' };
   }
-  if (hasPET && isRecyclable) {
-    return { score: 70, description: 'PET-plast (resirkulerbar)', available: true, source: 'packaging_tags' };
+
+  // Plastic types with specific scores and descriptions
+  if (hasPET) {
+    const score = isRecyclable ? 70 : 55;
+    return { score, description: `PET (#1) - ${isRecyclable ? 'Pant/resirkulerbar ♻️' : 'Bør resirkuleres'}`, available: true, source: 'packaging_tags' };
   }
-  if (hasPlastic) {
-    const plasticScore = isRecyclable ? 55 : 40;
-    return { score: plasticScore, description: isRecyclable ? 'Plast (delvis resirkulerbar)' : 'Plastemballasje', available: true, source: 'packaging_tags' };
+  if (hasHDPE) {
+    const score = isRecyclable ? 68 : 50;
+    return { score, description: `HDPE (#2) - ${isRecyclable ? 'Resirkulerbar ♻️' : 'Kan resirkuleres'}`, available: true, source: 'packaging_tags' };
+  }
+  if (hasPP) {
+    const score = isRecyclable ? 60 : 45;
+    return { score, description: `PP (#5) - ${isRecyclable ? 'Delvis resirkulerbar' : 'Begrenset resirkulering'}`, available: true, source: 'packaging_tags' };
+  }
+  if (hasLDPE) {
+    return { score: 40, description: 'LDPE (#4) - Mykplast (vanskelig å resirkulere)', available: true, source: 'packaging_tags' };
+  }
+  if (hasPVC) {
+    return { score: 25, description: 'PVC (#3) - ⚠️ Problematisk plast', available: true, source: 'packaging_tags' };
+  }
+  if (hasPS) {
+    return { score: 30, description: 'PS (#6) - ⚠️ Vanskelig å resirkulere', available: true, source: 'packaging_tags' };
+  }
+  if (hasOtherPlastic) {
+    return { score: 35, description: 'Blandet plast (#7) - Ikke resirkulerbar', available: true, source: 'packaging_tags' };
   }
 
   // Fall back to free-text packaging field
@@ -395,14 +606,13 @@ function calculateHealthScore(product: ProductData): { total: number; grade: 'A'
  * ```
  */
 export function calculateGrønnScore(product: ProductData): GrønnScoreResult {
-  // 1. Base ecoscore (40% weight)
+  // 1. Base ecoscore (35% weight - reduced to make room for plant-based)
   const ecoscore = getEcoscoreValue(product.ecoscore.grade);
 
-  // 2. Transport score (25% weight) - uses multiple data sources
+  // 2. Transport score (20% weight)
   const transport = getTransportScore(product);
 
   // 3. Norwegian indicator (15% weight)
-  // We check multiple sources for Norwegian origin
   const norwegianKnown = product.isNorwegian ||
     product.origin.toLowerCase().includes('norge') ||
     product.originTags.some(t => t.includes('norway'));
@@ -413,31 +623,39 @@ export function calculateGrønnScore(product: ProductData): GrønnScoreResult {
       ? 'Ikke norskprodusert'
       : 'Opprinnelse ukjent - antatt importert';
 
-  // 4. Packaging score (10% weight) - uses structured tags + ecoscore data
+  // 4. Packaging score (10% weight)
   const packaging = getPackagingScore(product);
 
-  // 5. Certifications (10% weight) - uses structured label tags
+  // 5. Certifications (5% weight - reduced)
   const certs = getCertificationScore(product);
 
-  // Calculate data quality (how much real data do we have?)
+  // 6. NEW: Plant-based bonus (15% weight) - rewards lower climate impact
+  const plantBased = getPlantBasedScore(product);
+
+  // 7. NEW: CO₂ estimate
+  const co2Estimate = estimateCO2(product);
+
+  // Calculate data quality
   const dataPoints = [
-    { available: ecoscore.available, weight: 40 },
-    { available: transport.available, weight: 25 },
+    { available: ecoscore.available, weight: 35 },
+    { available: transport.available, weight: 20 },
     { available: norwegianKnown || transport.available, weight: 15 },
     { available: packaging.available, weight: 10 },
-    { available: true, weight: 10 }, // Certifications always "available" (empty is still data)
+    { available: true, weight: 5 },
+    { available: true, weight: 15 }, // Plant-based detection always available
   ];
   const dataQuality = Math.round(
     dataPoints.reduce((sum, d) => sum + (d.available ? d.weight : 0), 0)
   );
 
-  // Calculate weighted total
+  // Calculate weighted total (new weights)
   const total = Math.round(
-    ecoscore.score * 0.40 +
-    transport.score * 0.25 +
+    ecoscore.score * 0.35 +
+    transport.score * 0.20 +
     norwegianScore * 0.15 +
     packaging.score * 0.10 +
-    certs.score * 0.10
+    certs.score * 0.05 +
+    plantBased.score * 0.15
   );
 
   // Determine grade
@@ -497,11 +715,19 @@ export function calculateGrønnScore(product: ProductData): GrønnScoreResult {
         dataAvailable: true,
         confidence: 'high',
       },
+      plantBased: {
+        score: plantBased.score,
+        label: 'Klimavalg',
+        description: plantBased.description,
+        dataAvailable: true,
+        confidence: plantBased.isPlantBased ? 'high' : 'medium',
+      },
     },
     healthScore: {
       ...healthScore,
       dataAvailable: product.nutriscore.grade.toLowerCase() !== 'unknown',
     },
+    co2Estimate,
   };
 }
 
