@@ -393,7 +393,8 @@ export default function ProductCard({ product, score, onClose, alternatives = []
           </h3>
           <div className="flex gap-4">
             <div className="flex-1 text-center p-3 bg-white rounded-xl">
-              <div className="text-sm text-gray-500 mb-1">{t.nutriScore}</div>
+              <div className="text-sm text-gray-500 mb-0.5">{t.nutriScore}</div>
+              <div className="text-[10px] text-gray-400 mb-1">{t.nutriScoreExplain}</div>
               <div className={`text-2xl font-bold ${getScoreTextColor(score.healthScore.total)}`}>
                 {score.healthScore.nutriscore || '?'}
               </div>
@@ -404,7 +405,8 @@ export default function ProductCard({ product, score, onClose, alternatives = []
               product.novaGroup === 2 ? 'bg-yellow-50' :
               product.novaGroup === 1 ? 'bg-green-50' : 'bg-white'
             }`}>
-              <div className="text-sm text-gray-500 mb-1">{t.novaGroup}</div>
+              <div className="text-sm text-gray-500 mb-0.5">{t.novaGroup}</div>
+              <div className="text-[10px] text-gray-400 mb-1">{t.novaGroupExplain}</div>
               <div className={`text-2xl font-bold ${
                 product.novaGroup === 4 ? 'text-red-600' :
                 product.novaGroup === 3 ? 'text-orange-600' :

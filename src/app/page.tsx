@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, lazy, Suspense, memo } from 'react';
-import { Leaf, Scan, Moon, Sun, Info, ShoppingCart, MessageCircle, ExternalLink, Plus } from 'lucide-react';
+import { Leaf, Scan, Moon, Sun, Info, ShoppingCart, MessageCircle, ExternalLink, Plus, Camera } from 'lucide-react';
 import Link from 'next/link';
 
 // Components
 import BarcodeScanner from '@/components/BarcodeScanner';
+import ImageScanner from '@/components/ImageScanner';
 import ProductCard from '@/components/ProductCard';
 import StatsCard from '@/components/StatsCard';
 import WelcomeCard from '@/components/WelcomeCard';
@@ -15,6 +16,7 @@ import FilterBar from '@/components/FilterBar';
 import ScanHistory from '@/components/ScanHistory';
 import AppFooter from '@/components/AppFooter';
 import LanguageSelector from '@/components/LanguageSelector';
+import TextSizeSelector from '@/components/TextSizeSelector';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import InstallPrompt from '@/components/InstallPrompt';
 
@@ -63,13 +65,14 @@ interface Filters {
 
 export default function Home() {
   // i18n
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   // Register service worker for PWA
   useServiceWorker();
 
   // Core state
   const [showScanner, setShowScanner] = useState(false);
+  const [showImageScanner, setShowImageScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -324,6 +327,11 @@ export default function Home() {
     setShoppingList(prev => prev.filter(item => !item.checked));
   };
 
+  // Sync shopping list from family share
+  const syncShoppingItems = (syncedItems: ShoppingItem[]) => {
+    setShoppingList(syncedItems);
+  };
+
   // Comparison handlers
   const addToComparison = (result: ScanResult) => {
     if (compareProducts.length < 2 && !compareProducts.find(p => p.product.barcode === result.product.barcode)) {
@@ -371,12 +379,15 @@ export default function Home() {
             {/* Language Selector */}
             <LanguageSelector />
 
+            {/* Text Size Selector (Accessibility) */}
+            <TextSizeSelector />
+
             <button
               onClick={toggleDarkMode}
               className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
               aria-label={darkMode ? t.lightMode : t.darkMode}
             >
-              {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-600" />}
+              {darkMode ? <Sun className="w-6 h-6 text-yellow-500" /> : <Moon className="w-6 h-6 text-gray-600" />}
             </button>
 
             <button
@@ -384,7 +395,7 @@ export default function Home() {
               className="relative w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
               aria-label={t.shoppingList}
             >
-              <ShoppingCart className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <ShoppingCart className="w-6 h-6 text-green-600 dark:text-green-400" />
               {shoppingList.filter(i => !i.checked).length > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                   {shoppingList.filter(i => !i.checked).length}
@@ -397,7 +408,7 @@ export default function Home() {
               className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
               aria-label={t.aboutUs}
             >
-              <Info className="w-5 h-5 text-green-600 dark:text-green-400" />
+              <Info className="w-6 h-6 text-green-600 dark:text-green-400" />
             </Link>
           </div>
         </div>
@@ -452,6 +463,15 @@ export default function Home() {
         <p className="text-base font-medium text-gray-500 dark:text-gray-400 mt-6">
           {t.tapToScan}
         </p>
+
+        {/* Image scan option */}
+        <button
+          onClick={() => { setShowImageScanner(true); setNotFoundBarcode(null); }}
+          className="mt-4 flex items-center gap-2 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+        >
+          <Camera className="w-4 h-4" />
+          {language === 'nb' ? 'Eller ta bilde av produktet' : 'Or take a photo of the product'}
+        </button>
       </div>
 
       {/* Error Message */}
@@ -560,6 +580,7 @@ export default function Home() {
             onToggleItem={toggleShoppingItem}
             onRemoveItem={removeShoppingItem}
             onClearCompleted={clearCompletedItems}
+            onSyncItems={syncShoppingItems}
           />
         </Suspense>
       )}
@@ -601,6 +622,17 @@ export default function Home() {
           onScan={handleScan}
           onClose={() => setShowScanner(false)}
           isLoading={isLoading}
+        />
+      )}
+
+      {/* Image Scanner Modal */}
+      {showImageScanner && (
+        <ImageScanner
+          onSelectProduct={(barcode) => {
+            setShowImageScanner(false);
+            handleScan(barcode);
+          }}
+          onClose={() => setShowImageScanner(false)}
         />
       )}
 

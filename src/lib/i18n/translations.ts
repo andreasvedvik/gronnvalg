@@ -73,7 +73,9 @@ export interface Translations {
 
   // Health
   nutriScore: string;
+  nutriScoreExplain: string;
   novaGroup: string;
+  novaGroupExplain: string;
   novaUnprocessed: string;
   novaMinimallyProcessed: string;
   novaProcessed: string;
@@ -219,6 +221,11 @@ export interface Translations {
   // Stats Card
   yourAverageScore: string;
   basedOnScans: string;
+  scoreExcellent: string;
+  scoreGood: string;
+  scoreAverage: string;
+  scoreNeedsImprovement: string;
+  scorePoor: string;
 
   // Export/Share
   exportList: string;
@@ -246,6 +253,30 @@ export interface Translations {
   pricesFrom: string;
   availableAtStores: string;
   seeAllPrices: string;
+
+  // Family Mode
+  familyMode: string;
+  shareWithFamily: string;
+  createSharedList: string;
+  joinSharedList: string;
+  shareCode: string;
+  scanQrToJoin: string;
+  orEnterCode: string;
+  enterShareCode: string;
+  joinList: string;
+  createNewList: string;
+  listName: string;
+  creating: string;
+  joining: string;
+  shareThisCode: string;
+  syncedList: string;
+  familyListActive: string;
+  leaveFamilyList: string;
+  copyCode: string;
+  codeCopied: string;
+  invalidCode: string;
+  connectionError: string;
+  supabaseNotConfigured: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -319,7 +350,9 @@ export const translations: Record<Language, Translations> = {
 
     // Health
     nutriScore: 'Nutri-Score',
+    nutriScoreExplain: 'Viser hvor sunn maten er. A er best, E er dårligst.',
     novaGroup: 'NOVA-gruppe',
+    novaGroupExplain: 'Viser hvor bearbeidet maten er. 1 er naturlig, 4 er ultrabearbeidet.',
     novaUnprocessed: 'Ubearbeidet',
     novaMinimallyProcessed: 'Lite bearbeidet',
     novaProcessed: 'Bearbeidet',
@@ -465,6 +498,11 @@ export const translations: Record<Language, Translations> = {
     // Stats Card
     yourAverageScore: 'Din gjennomsnittlige Miljøscore',
     basedOnScans: 'Basert på {count} skann',
+    scoreExcellent: 'Utmerket!',
+    scoreGood: 'Bra',
+    scoreAverage: 'Middels',
+    scoreNeedsImprovement: 'Kan forbedres',
+    scorePoor: 'Bør forbedres',
 
     // Export/Share
     exportList: 'Del handleliste',
@@ -492,6 +530,30 @@ export const translations: Record<Language, Translations> = {
     pricesFrom: 'Priser fra Kassalapp',
     availableAtStores: 'Tilgjengelig i {count} butikker',
     seeAllPrices: 'Se alle priser på Kassalapp',
+
+    // Family Mode
+    familyMode: 'Familie-modus',
+    shareWithFamily: 'Del med familie',
+    createSharedList: 'Opprett delt liste',
+    joinSharedList: 'Bli med i liste',
+    shareCode: 'Delekode',
+    scanQrToJoin: 'Skann QR-kode for å bli med',
+    orEnterCode: 'eller skriv inn kode',
+    enterShareCode: 'Skriv inn delekode',
+    joinList: 'Bli med',
+    createNewList: 'Opprett ny liste',
+    listName: 'Listenavn',
+    creating: 'Oppretter...',
+    joining: 'Blir med...',
+    shareThisCode: 'Del denne koden med familien',
+    syncedList: 'Synkronisert liste',
+    familyListActive: 'Familie-liste aktiv',
+    leaveFamilyList: 'Forlat familieliste',
+    copyCode: 'Kopier kode',
+    codeCopied: 'Kode kopiert!',
+    invalidCode: 'Ugyldig kode. Sjekk at du har skrevet riktig.',
+    connectionError: 'Kunne ikke koble til. Prøv igjen.',
+    supabaseNotConfigured: 'Familie-deling er ikke konfigurert. Kontakt administrator.',
   },
 
   en: {
@@ -564,7 +626,9 @@ export const translations: Record<Language, Translations> = {
 
     // Health
     nutriScore: 'Nutri-Score',
+    nutriScoreExplain: 'Shows how healthy the food is. A is best, E is worst.',
     novaGroup: 'NOVA group',
+    novaGroupExplain: 'Shows how processed the food is. 1 is natural, 4 is ultra-processed.',
     novaUnprocessed: 'Unprocessed',
     novaMinimallyProcessed: 'Minimally processed',
     novaProcessed: 'Processed',
@@ -710,6 +774,11 @@ export const translations: Record<Language, Translations> = {
     // Stats Card
     yourAverageScore: 'Your average Eco Score',
     basedOnScans: 'Based on {count} scans',
+    scoreExcellent: 'Excellent!',
+    scoreGood: 'Good',
+    scoreAverage: 'Average',
+    scoreNeedsImprovement: 'Needs improvement',
+    scorePoor: 'Needs work',
 
     // Export/Share
     exportList: 'Share shopping list',
@@ -737,6 +806,30 @@ export const translations: Record<Language, Translations> = {
     pricesFrom: 'Prices from Kassalapp',
     availableAtStores: 'Available at {count} stores',
     seeAllPrices: 'See all prices on Kassalapp',
+
+    // Family Mode
+    familyMode: 'Family Mode',
+    shareWithFamily: 'Share with family',
+    createSharedList: 'Create shared list',
+    joinSharedList: 'Join shared list',
+    shareCode: 'Share code',
+    scanQrToJoin: 'Scan QR code to join',
+    orEnterCode: 'or enter code',
+    enterShareCode: 'Enter share code',
+    joinList: 'Join',
+    createNewList: 'Create new list',
+    listName: 'List name',
+    creating: 'Creating...',
+    joining: 'Joining...',
+    shareThisCode: 'Share this code with your family',
+    syncedList: 'Synced list',
+    familyListActive: 'Family list active',
+    leaveFamilyList: 'Leave family list',
+    copyCode: 'Copy code',
+    codeCopied: 'Code copied!',
+    invalidCode: 'Invalid code. Please check and try again.',
+    connectionError: 'Could not connect. Please try again.',
+    supabaseNotConfigured: 'Family sharing is not configured. Contact administrator.',
   },
 };
 

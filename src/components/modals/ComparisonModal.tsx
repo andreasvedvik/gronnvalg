@@ -1,16 +1,24 @@
 'use client';
 
-import { X, ArrowLeftRight, Plus, Leaf } from 'lucide-react';
+import { X, ArrowLeftRight, Plus, Leaf, Tag } from 'lucide-react';
 import Image from 'next/image';
 import { ProductData } from '@/lib/openfoodfacts';
 import { GrønnScoreResult, getScoreColor } from '@/lib/scoring';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useLanguage } from '@/lib/i18n';
 
+interface StorePriceInfo {
+  price: number;
+  unitPrice?: number;
+  storeName: string;
+  storeLogo?: string;
+}
+
 interface ScanResult {
   product: ProductData;
   score: GrønnScoreResult;
   alternatives: ProductData[];
+  prices?: StorePriceInfo[];
   timestamp?: number;
 }
 
@@ -43,6 +51,11 @@ export default function ComparisonModal({
       remove: 'Fjern',
       selectProduct: 'Velg produkt',
       selectFromHistory: 'Velg fra historikk:',
+      lowestPrice: 'Laveste pris',
+      noPrice: 'Pris ukjent',
+      winner: 'Beste valg!',
+      betterScore: 'Bedre score',
+      betterPrice: 'Bedre pris',
     },
     en: {
       title: 'Compare products',
@@ -50,6 +63,11 @@ export default function ComparisonModal({
       remove: 'Remove',
       selectProduct: 'Select product',
       selectFromHistory: 'Select from history:',
+      lowestPrice: 'Lowest price',
+      noPrice: 'Price unknown',
+      winner: 'Best choice!',
+      betterScore: 'Better score',
+      betterPrice: 'Better price',
     },
   };
 
@@ -93,6 +111,22 @@ export default function ComparisonModal({
                         <span className="text-white font-bold text-lg">{product.score.grade}</span>
                       </div>
                       <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{product.score.total}</p>
+
+                      {/* Price display */}
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <div className="flex items-center justify-center gap-1 text-gray-500 dark:text-gray-400">
+                          <Tag className="w-3 h-3" />
+                          <span className="text-xs">{tx.lowestPrice}</span>
+                        </div>
+                        {product.prices && product.prices.length > 0 ? (
+                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                            {product.prices[0].price.toFixed(2)} kr
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-400 italic">{tx.noPrice}</p>
+                        )}
+                      </div>
+
                       <button
                         onClick={() => onRemoveFromComparison(product.product.barcode)}
                         className="mt-2 text-xs text-red-500 hover:underline"
@@ -110,6 +144,69 @@ export default function ComparisonModal({
               );
             })}
           </div>
+
+          {/* Comparison Summary - show when both products selected */}
+          {compareProducts.length === 2 && (
+            <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-xl">
+              <div className="grid grid-cols-2 gap-4 text-center text-sm">
+                {/* Score comparison */}
+                <div>
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+                    compareProducts[0].score.total > compareProducts[1].score.total
+                      ? 'bg-green-500 text-white'
+                      : compareProducts[0].score.total < compareProducts[1].score.total
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        : 'bg-yellow-400 text-yellow-900'
+                  }`}>
+                    {compareProducts[0].score.total > compareProducts[1].score.total ? tx.betterScore :
+                     compareProducts[0].score.total === compareProducts[1].score.total ? '=' : ''}
+                  </span>
+                </div>
+                <div>
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+                    compareProducts[1].score.total > compareProducts[0].score.total
+                      ? 'bg-green-500 text-white'
+                      : compareProducts[1].score.total < compareProducts[0].score.total
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                        : 'bg-yellow-400 text-yellow-900'
+                  }`}>
+                    {compareProducts[1].score.total > compareProducts[0].score.total ? tx.betterScore :
+                     compareProducts[1].score.total === compareProducts[0].score.total ? '=' : ''}
+                  </span>
+                </div>
+
+                {/* Price comparison */}
+                {compareProducts[0].prices?.[0] && compareProducts[1].prices?.[0] && (
+                  <>
+                    <div>
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+                        compareProducts[0].prices[0].price < compareProducts[1].prices[0].price
+                          ? 'bg-blue-500 text-white'
+                          : compareProducts[0].prices[0].price > compareProducts[1].prices[0].price
+                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            : 'bg-yellow-400 text-yellow-900'
+                      }`}>
+                        {compareProducts[0].prices[0].price < compareProducts[1].prices[0].price ? tx.betterPrice :
+                         compareProducts[0].prices[0].price === compareProducts[1].prices[0].price ? '=' : ''}
+                      </span>
+                    </div>
+                    <div>
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
+                        compareProducts[1].prices[0].price < compareProducts[0].prices[0].price
+                          ? 'bg-blue-500 text-white'
+                          : compareProducts[1].prices[0].price > compareProducts[0].prices[0].price
+                            ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            : 'bg-yellow-400 text-yellow-900'
+                      }`}>
+                        {compareProducts[1].prices[0].price < compareProducts[0].prices[0].price ? tx.betterPrice :
+                         compareProducts[1].prices[0].price === compareProducts[0].prices[0].price ? '=' : ''}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Product list to choose from */}
           <div className="border-t dark:border-gray-700 pt-4">
