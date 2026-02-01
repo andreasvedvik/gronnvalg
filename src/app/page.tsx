@@ -35,9 +35,7 @@ const ChatModal = lazy(() => import('@/components/modals/ChatModal'));
 // Utils
 import { fetchProduct, searchAlternatives, searchSimilarProducts, ProductData } from '@/lib/openfoodfacts';
 import { calculateGrønnScore, GrønnScoreResult } from '@/lib/scoring';
-import { fetchFromKassalapp, KassalappProduct } from '@/lib/kassalapp';
 import analytics from '@/lib/analytics';
-import { StorePriceInfo } from '@/components/ProductCard';
 
 // Types
 interface ScanResult {
@@ -45,7 +43,6 @@ interface ScanResult {
   score: GrønnScoreResult;
   alternatives: ProductData[];
   similarProducts?: ProductData[]; // KUN norske produkter
-  prices?: StorePriceInfo[]; // Price comparison from Kassalapp
   timestamp?: number;
 }
 
@@ -189,7 +186,6 @@ export default function Home() {
         score,
         alternatives: [],
         similarProducts: [],
-        prices: [],
         timestamp: Date.now()
       };
       setScanResult(initialResult);
@@ -238,26 +234,10 @@ export default function Home() {
     };
 
     // Start all requests in parallel but handle them individually as they complete
-    const pricesPromise = withTimeout(fetchFromKassalapp(barcode), 4000);
     const similarPromise = withTimeout(searchSimilarProducts(product, 8), 5000);
     const alternativesPromise = product.category
       ? withTimeout(searchAlternatives(product.raw?.categories || product.category, 5, product.name), 5000)
       : Promise.resolve([]);
-
-    // Handle prices (usually fastest from Kassalapp)
-    pricesPromise.then((kassalappData) => {
-      if (kassalappData?.store_prices?.length) {
-        const prices = kassalappData.store_prices
-          .map((sp) => ({
-            price: sp.price.current,
-            unitPrice: sp.price.unit_price,
-            storeName: sp.store.name,
-            storeLogo: sp.store.logo,
-          }))
-          .sort((a, b) => a.price - b.price);
-        updateResult({ prices });
-      }
-    }).catch(() => {});
 
     // Handle similar Norwegian products
     similarPromise.then((similarResult) => {
@@ -291,7 +271,7 @@ export default function Home() {
     }).catch(() => {});
 
     // Wait for all to settle (don't block on errors)
-    await Promise.allSettled([pricesPromise, similarPromise, alternativesPromise]);
+    await Promise.allSettled([similarPromise, alternativesPromise]);
     setIsLoadingExtras(false);
   };
 
@@ -641,7 +621,6 @@ export default function Home() {
           score={scanResult.score}
           alternatives={scanResult.alternatives}
           similarProducts={scanResult.similarProducts}
-          prices={scanResult.prices}
           isLoadingExtras={isLoadingExtras}
           onClose={() => setScanResult(null)}
           onSelectProduct={(barcode) => {

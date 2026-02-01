@@ -3,18 +3,10 @@
 import { useState } from 'react';
 import { ProductData } from '@/lib/openfoodfacts';
 import { GrønnScoreResult, getScoreColor, getScoreTextColor, getGradeEmoji } from '@/lib/scoring';
-import { X, Leaf, Heart, Truck, Package, Award, Recycle, ChevronRight, ExternalLink, AlertCircle, HelpCircle, AlertTriangle, Info, ChevronDown, ChevronUp, Share2, Tag, Store, Loader2 } from 'lucide-react';
+import { X, Leaf, Heart, Truck, Package, Award, Recycle, ChevronRight, ExternalLink, AlertCircle, HelpCircle, AlertTriangle, Info, ChevronDown, ChevronUp, Share2, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useLanguage } from '@/lib/i18n';
 import { getProductCertifications, CertificationInfo } from '@/lib/certifications';
-
-// Price info from Kassalapp
-export interface StorePriceInfo {
-  price: number;
-  unitPrice?: number;
-  storeName: string;
-  storeLogo?: string;
-}
 
 interface ProductCardProps {
   product: ProductData;
@@ -23,11 +15,10 @@ interface ProductCardProps {
   alternatives?: ProductData[];
   similarProducts?: ProductData[]; // KUN norske produkter
   onSelectProduct?: (barcode: string) => void; // Callback for selecting a similar product
-  prices?: StorePriceInfo[]; // Price comparison data from Kassalapp
-  isLoadingExtras?: boolean; // True while loading alternatives, similar products, prices
+  isLoadingExtras?: boolean; // True while loading alternatives, similar products
 }
 
-export default function ProductCard({ product, score, onClose, alternatives = [], similarProducts = [], onSelectProduct, prices = [], isLoadingExtras = false }: ProductCardProps) {
+export default function ProductCard({ product, score, onClose, alternatives = [], similarProducts = [], onSelectProduct, isLoadingExtras = false }: ProductCardProps) {
   const { t, language } = useLanguage();
   const [showCertDetails, setShowCertDetails] = useState(false);
 
@@ -429,94 +420,6 @@ export default function ProductCard({ product, score, onClose, alternatives = []
             </div>
           </div>
         </div>
-
-        {/* Price Comparison & Store Finder */}
-        {(prices.length > 0 || isLoadingExtras) && (
-          <div className="mx-4 mt-4 bg-blue-50 rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Tag className="w-4 h-4 text-blue-600" />
-                {t.priceComparison}
-                {isLoadingExtras && prices.length === 0 && <Loader2 className="w-4 h-4 animate-spin text-blue-600" />}
-              </h3>
-              {prices.length > 0 && (
-                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                  {(language === 'nb' ? t.availableAtStores : t.availableAtStores).replace('{count}', prices.length.toString())}
-                </span>
-              )}
-            </div>
-            <div className="space-y-2">
-              {isLoadingExtras && prices.length === 0 ? (
-                <div className="space-y-2 animate-pulse">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-200 rounded-lg" />
-                        <div className="h-4 w-24 bg-gray-200 rounded" />
-                      </div>
-                      <div className="h-5 w-16 bg-gray-200 rounded" />
-                    </div>
-                  ))}
-                </div>
-              ) : prices.slice(0, 4).map((storePrice, i) => (
-                <div
-                  key={`price-${storePrice.storeName}-${i}`}
-                  className={`flex items-center justify-between p-3 rounded-xl ${
-                    i === 0 ? 'bg-green-100 border border-green-200' : 'bg-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-gray-100 relative">
-                      {storePrice.storeLogo ? (
-                        <Image
-                          src={storePrice.storeLogo}
-                          alt={storePrice.storeName}
-                          width={32}
-                          height={32}
-                          className="object-contain"
-                        />
-                      ) : (
-                        <Store className="w-5 h-5 text-gray-400" />
-                      )}
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-900">{storePrice.storeName}</span>
-                      {i === 0 && (
-                        <span className="ml-2 text-xs text-green-700 bg-green-200 px-1.5 py-0.5 rounded-full">
-                          {t.lowestPrice}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className={`font-bold ${i === 0 ? 'text-green-700' : 'text-gray-900'}`}>
-                      {storePrice.price.toFixed(2)} kr
-                    </span>
-                    {storePrice.unitPrice && (
-                      <p className="text-xs text-gray-500">
-                        {storePrice.unitPrice.toFixed(2)} kr/kg
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {!isLoadingExtras && prices.length > 4 && (
-              <a
-                href={`https://kassal.app/produkt/${product.barcode}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                {t.seeAllPrices}
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              {t.pricesFrom}
-            </p>
-          </div>
-        )}
 
         {/* Lignende norske produkter - kun norske produkter for norske brukere */}
         {(hasNorwegianProducts || isLoadingExtras) && (

@@ -215,17 +215,3 @@ export function extractPackagingFromKassalapp(product: KassalappProduct): {
   };
 }
 
-/**
- * Get best price from Kassalapp
- */
-export function getBestPrice(product: KassalappProduct): { price: number; store: string } | null {
-  if (!product.store_prices || product.store_prices.length === 0) {
-    return null;
-  }
-
-  const sorted = [...product.store_prices].sort((a, b) => a.price.current - b.price.current);
-  return {
-    price: sorted[0].price.current,
-    store: sorted[0].store.name,
-  };
-}
