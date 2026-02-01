@@ -209,7 +209,7 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
           <div className="flex gap-2 justify-center flex-wrap">
             {[
               { code: '7038010009457', name: 'TINE Melk' },
-              { code: '7622210100610', name: 'Kvikk Lunsj' },
+              { code: '7038010005541', name: 'Jarlsberg' },
               { code: '5000112637939', name: 'Coca-Cola' },
             ].map((item) => (
               <button
