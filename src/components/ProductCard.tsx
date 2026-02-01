@@ -181,15 +181,16 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
       >
         {/* Header - fixed at top */}
         <div className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 rounded-t-3xl">
-          <button
-            type="button"
-            onClick={handleClose}
+          <div
+            role="button"
+            tabIndex={0}
+            onPointerUp={handleClose}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleClose(); }}
             aria-label={t.close}
-            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors cursor-pointer"
-            style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}
+            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors cursor-pointer select-none"
           >
-            <X className="w-6 h-6 text-gray-600 dark:text-gray-400 pointer-events-none" />
-          </button>
+            <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+          </div>
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-gray-900 dark:text-white truncate">{product.name}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
@@ -618,14 +619,15 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
 
         {/* Action Button - Fixed at bottom */}
         <div className="flex-shrink-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4">
-          <button
-            type="button"
-            onClick={handleScanAgain}
-            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 active:bg-green-700 transition-colors shadow-lg cursor-pointer"
-            style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}
+          <div
+            role="button"
+            tabIndex={0}
+            onPointerUp={handleScanAgain}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleScanAgain(); }}
+            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 active:bg-green-700 transition-colors shadow-lg cursor-pointer select-none text-center"
           >
             {t.scanNewProduct}
-          </button>
+          </div>
         </div>
       </div>
     </div>
