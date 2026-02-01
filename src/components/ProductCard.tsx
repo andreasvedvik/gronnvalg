@@ -96,13 +96,14 @@ interface ProductCardProps {
   product: ProductData;
   score: GrønnScoreResult;
   onClose: () => void;
+  onScanAgain?: () => void; // Callback to open scanner again (for mobile UX)
   alternatives?: ProductData[];
   similarProducts?: ProductData[]; // KUN norske produkter
   onSelectProduct?: (barcode: string) => void; // Callback for selecting a similar product
   isLoadingExtras?: boolean; // True while loading alternatives, similar products
 }
 
-export default function ProductCard({ product, score, onClose, alternatives = [], similarProducts = [], onSelectProduct, isLoadingExtras = false }: ProductCardProps) {
+export default function ProductCard({ product, score, onClose, onScanAgain, alternatives = [], similarProducts = [], onSelectProduct, isLoadingExtras = false }: ProductCardProps) {
   const { t, language } = useLanguage();
   const [showCertDetails, setShowCertDetails] = useState(false);
 
@@ -595,8 +596,14 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4">
           <button
             type="button"
-            onClick={onClose}
-            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition-colors shadow-lg touch-manipulation"
+            onClick={() => {
+              if (onScanAgain) {
+                onScanAgain();
+              } else {
+                onClose();
+              }
+            }}
+            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 active:bg-green-700 transition-colors shadow-lg touch-manipulation"
           >
             {t.scanNewProduct}
           </button>

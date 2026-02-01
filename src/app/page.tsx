@@ -650,6 +650,10 @@ export default function Home() {
           similarProducts={scanResult.similarProducts}
           isLoadingExtras={isLoadingExtras}
           onClose={() => setScanResult(null)}
+          onScanAgain={() => {
+            setScanResult(null); // Close current card
+            setShowScanner(true); // Open scanner immediately
+          }}
           onSelectProduct={(barcode) => {
             setScanResult(null); // Close current card
             handleScan(barcode); // Fetch and show the selected product
