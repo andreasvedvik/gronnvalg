@@ -202,27 +202,6 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t.search}
           </button>
         </form>
-
-        {/* Demo barcodes */}
-        <div className="mt-3 text-center">
-          <p className="text-gray-500 text-xs mb-2">{t.tryTheseBarcodes}</p>
-          <div className="flex gap-2 justify-center flex-wrap">
-            {[
-              { code: '7038010009457', name: 'TINE Melk' },
-              { code: '7038010009624', name: 'Norvegia' },
-              { code: '5000112637939', name: 'Coca-Cola' },
-            ].map((item) => (
-              <button
-                key={item.code}
-                onClick={() => onScan(item.code)}
-                disabled={isLoading}
-                className="px-3 py-1 bg-gray-800 text-gray-300 rounded-full text-xs hover:bg-gray-700 disabled:opacity-50"
-              >
-                {item.name}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Hidden canvas for processing */}
