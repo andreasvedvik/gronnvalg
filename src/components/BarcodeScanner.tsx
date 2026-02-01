@@ -29,7 +29,7 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
 
   useEffect(() => {
     let stream: MediaStream | null = null;
-    let animationFrame: number;
+    let isMounted = true;
 
     const startCamera = async () => {
       try {
@@ -42,6 +42,12 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
           },
         });
 
+        // Check if component is still mounted before proceeding
+        if (!isMounted) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
@@ -49,6 +55,13 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
 
         // Dynamically import zxing for barcode scanning
         const { BrowserMultiFormatReader } = await import('@zxing/browser');
+
+        // Check again after async import
+        if (!isMounted) {
+          stream?.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
         const codeReader = new BrowserMultiFormatReader();
         scannerRef.current = codeReader;
 
@@ -63,17 +76,36 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
           });
         }
       } catch {
-        setHasCamera(false);
-        setError(`${t.couldNotStartCamera}. ${t.tryManualInput}.`);
+        if (isMounted) {
+          setHasCamera(false);
+          setError(`${t.couldNotStartCamera}. ${t.tryManualInput}.`);
+        }
       }
     };
 
     startCamera();
 
     return () => {
+      isMounted = false;
+
+      // Cleanup - stop the barcode scanner
+      if (scannerRef.current) {
+        try {
+          scannerRef.current.reset();
+        } catch {
+          // Scanner may already be stopped
+        }
+        scannerRef.current = null;
+      }
+
       // Cleanup - stop camera stream
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
+      }
+
+      // Clear video source
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
       }
     };
   }, [onScan, t]);

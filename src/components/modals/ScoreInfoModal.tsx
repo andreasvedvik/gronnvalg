@@ -21,7 +21,7 @@ export default function ScoreInfoModal({ isOpen, onClose }: ScoreInfoModalProps)
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 id="score-info-title" className="text-xl font-bold text-gray-900 dark:text-white">{t.whatIsMiljoscore}</h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+            <button onClick={onClose} aria-label={t.close} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>

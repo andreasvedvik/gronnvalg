@@ -81,7 +81,7 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
               <p className="text-xs text-gray-500">{t.aiAssistantDesc}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+          <button onClick={onClose} aria-label={t.close} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -148,6 +148,7 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
             <button
               onClick={handleSend}
               disabled={!input.trim()}
+              aria-label={language === 'nb' ? 'Send melding' : 'Send message'}
               className="px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Send className="w-5 h-5" />

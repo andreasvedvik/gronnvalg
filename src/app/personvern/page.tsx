@@ -209,10 +209,12 @@ export default function PersonvernPage() {
             </p>
             <button
               onClick={() => {
-                if (confirm('Er du sikker på at du vil slette all Grønnest-data? Dette inkluderer skannehistorikk, handleliste, innstillinger og bruksstatistikk.')) {
+                if (confirm('Er du sikker på at du vil slette all Grønnest-data? Dette inkluderer skannehistorikk, handleliste, favoritter, innstillinger og bruksstatistikk.')) {
                   localStorage.removeItem('gronnest-history');
                   localStorage.removeItem('gronnest-shopping');
+                  localStorage.removeItem('gronnest-favorites');
                   localStorage.removeItem('gronnest-darkmode');
+                  localStorage.removeItem('gronnest-textsize');
                   localStorage.removeItem('gronnest_analytics');
                   sessionStorage.removeItem('gronnest_session');
                   alert('All data er slettet. Siden vil nå lastes på nytt.');

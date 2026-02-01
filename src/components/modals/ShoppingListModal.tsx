@@ -259,7 +259,7 @@ export default function ShoppingListModal({
               <ShoppingCart className="w-5 h-5" />
               {t.shoppingList}
             </h2>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+            <button onClick={onClose} aria-label={t.close} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
               <X className="w-5 h-5 text-gray-500" />
             </button>
           </div>
@@ -287,6 +287,7 @@ export default function ShoppingListModal({
               </div>
               <button
                 onClick={handleAdd}
+                aria-label={t.addItem || 'Legg til'}
                 className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
               >
                 <Plus className="w-5 h-5" />
@@ -386,6 +387,7 @@ export default function ShoppingListModal({
                 <div key={item.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                   <button
                     onClick={() => onToggleItem(item.id)}
+                    aria-label={item.checked ? (language === 'nb' ? 'Marker som ikke fullført' : 'Mark as incomplete') : (language === 'nb' ? 'Marker som fullført' : 'Mark as complete')}
                     className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
                       item.checked
                         ? 'bg-green-500 border-green-500'
@@ -413,6 +415,7 @@ export default function ShoppingListModal({
                   </span>
                   <button
                     onClick={() => onRemoveItem(item.id)}
+                    aria-label={language === 'nb' ? `Fjern ${item.name}` : `Remove ${item.name}`}
                     className="p-1 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
                   >
                     <Trash2 className="w-4 h-4" />

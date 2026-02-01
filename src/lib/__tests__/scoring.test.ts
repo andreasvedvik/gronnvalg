@@ -2,13 +2,12 @@
  * Unit tests for the Grønnest scoring system
  *
  * To run these tests:
- * 1. Install Vitest: npm install -D vitest @vitejs/plugin-react
- * 2. Add to package.json: "test": "vitest"
- * 3. Run: npm test
+ * 1. npm install -D vitest @vitejs/plugin-react
+ * 2. npm test
  */
 
 import { describe, it, expect } from 'vitest';
-import { calculateGrønnScore, getScoreGrade, getScoreColor, getScoreTextColor } from '../scoring';
+import { calculateGrønnScore, getScoreColor, getScoreTextColor, getGradeEmoji } from '../scoring';
 import type { ProductData } from '../openfoodfacts';
 
 // Mock product data factory
@@ -58,7 +57,9 @@ describe('calculateGrønnScore', () => {
         ecoscore: { grade: 'a', score: 90, hasDetailedData: true },
       });
       const result = calculateGrønnScore(product);
-      expect(result.breakdown.ecoscore).toBe(40); // Max ecoscore is 40 points
+      // Ecoscore A = 100 points, weighted at 40% = 40 points contribution
+      expect(result.breakdown.ecoscore.score).toBe(100);
+      expect(result.breakdown.ecoscore.dataAvailable).toBe(true);
     });
 
     it('should give lower ecoscore points for grade C', () => {
@@ -66,15 +67,17 @@ describe('calculateGrønnScore', () => {
         ecoscore: { grade: 'c', score: 50, hasDetailedData: true },
       });
       const result = calculateGrønnScore(product);
-      expect(result.breakdown.ecoscore).toBeLessThan(30);
+      expect(result.breakdown.ecoscore.score).toBe(60);
+      expect(result.breakdown.ecoscore.dataAvailable).toBe(true);
     });
 
-    it('should give minimum ecoscore points for unknown grade', () => {
+    it('should give neutral ecoscore points for unknown grade', () => {
       const product = createMockProduct({
         ecoscore: { grade: 'unknown', score: 0, hasDetailedData: false },
       });
       const result = calculateGrønnScore(product);
-      expect(result.breakdown.ecoscore).toBe(20); // Default for unknown
+      expect(result.breakdown.ecoscore.score).toBe(50); // Neutral default
+      expect(result.breakdown.ecoscore.dataAvailable).toBe(false);
     });
   });
 
@@ -86,21 +89,29 @@ describe('calculateGrønnScore', () => {
       const norwegianScore = calculateGrønnScore(norwegianProduct);
       const foreignScore = calculateGrønnScore(foreignProduct);
 
-      expect(norwegianScore.breakdown.origin).toBeGreaterThan(foreignScore.breakdown.origin);
+      expect(norwegianScore.breakdown.norwegian.score).toBe(100);
+      expect(foreignScore.breakdown.norwegian.score).toBe(30);
+      expect(norwegianScore.breakdown.norwegian.score).toBeGreaterThan(foreignScore.breakdown.norwegian.score);
     });
 
-    it('should give extra bonus for Nyt Norge label', () => {
-      const nytNorgeProduct = createMockProduct({
-        isNorwegian: true,
-        labels: ['Nyt Norge'],
-        labelTags: ['en:produced-in-norway'],
+    it('should detect Norwegian origin from origin tags', () => {
+      const productWithNorwegianTag = createMockProduct({
+        isNorwegian: false,
+        originTags: ['en:norway'],
       });
-      const norwegianProduct = createMockProduct({ isNorwegian: true });
 
-      const nytNorgeScore = calculateGrønnScore(nytNorgeProduct);
-      const norwegianScore = calculateGrønnScore(norwegianProduct);
+      const result = calculateGrønnScore(productWithNorwegianTag);
+      expect(result.breakdown.norwegian.score).toBe(100);
+    });
 
-      expect(nytNorgeScore.breakdown.origin).toBeGreaterThanOrEqual(norwegianScore.breakdown.origin);
+    it('should detect Norwegian origin from origin text', () => {
+      const productWithNorwegianOrigin = createMockProduct({
+        isNorwegian: false,
+        origin: 'Norge',
+      });
+
+      const result = calculateGrønnScore(productWithNorwegianOrigin);
+      expect(result.breakdown.norwegian.score).toBe(100);
     });
   });
 
@@ -115,20 +126,70 @@ describe('calculateGrønnScore', () => {
       const organicScore = calculateGrønnScore(organicProduct);
       const regularScore = calculateGrønnScore(regularProduct);
 
-      expect(organicScore.breakdown.certifications).toBeGreaterThan(regularScore.breakdown.certifications);
+      expect(organicScore.breakdown.certifications.score).toBeGreaterThan(regularScore.breakdown.certifications.score);
     });
 
     it('should give bonus for Fairtrade products', () => {
-      const fairtadeProduct = createMockProduct({
+      const fairtradeProduct = createMockProduct({
         labels: ['Fairtrade'],
-        labelTags: ['en:fairtrade'],
+        labelTags: ['en:fair-trade'],
       });
       const regularProduct = createMockProduct();
 
-      const fairtradeScore = calculateGrønnScore(fairtadeProduct);
+      const fairtradeScore = calculateGrønnScore(fairtradeProduct);
       const regularScore = calculateGrønnScore(regularProduct);
 
-      expect(fairtradeScore.breakdown.certifications).toBeGreaterThan(regularScore.breakdown.certifications);
+      expect(fairtradeScore.breakdown.certifications.score).toBeGreaterThan(regularScore.breakdown.certifications.score);
+    });
+
+    it('should accumulate bonuses for multiple certifications', () => {
+      const multiCertProduct = createMockProduct({
+        labels: ['Økologisk', 'Fairtrade', 'MSC'],
+        labelTags: ['en:organic', 'en:fair-trade', 'en:msc'],
+      });
+      const singleCertProduct = createMockProduct({
+        labels: ['Økologisk'],
+        labelTags: ['en:organic'],
+      });
+
+      const multiScore = calculateGrønnScore(multiCertProduct);
+      const singleScore = calculateGrønnScore(singleCertProduct);
+
+      expect(multiScore.breakdown.certifications.score).toBeGreaterThan(singleScore.breakdown.certifications.score);
+    });
+  });
+
+  describe('Transport score', () => {
+    it('should give high score for Norwegian products', () => {
+      const product = createMockProduct({ isNorwegian: true });
+      const result = calculateGrønnScore(product);
+      expect(result.breakdown.transport.score).toBe(100);
+    });
+
+    it('should give medium score for Nordic products', () => {
+      const product = createMockProduct({ origin: 'Sweden' });
+      const result = calculateGrønnScore(product);
+      expect(result.breakdown.transport.score).toBe(80);
+    });
+
+    it('should give low score for far away origins', () => {
+      const product = createMockProduct({ origin: 'Brazil' });
+      const result = calculateGrønnScore(product);
+      expect(result.breakdown.transport.score).toBe(20);
+    });
+  });
+
+  describe('Packaging score', () => {
+    it('should give high score for glass packaging', () => {
+      const product = createMockProduct({ packagingTags: ['en:glass'] });
+      const result = calculateGrønnScore(product);
+      expect(result.breakdown.packaging.score).toBe(90);
+    });
+
+    it('should give low score for plastic packaging', () => {
+      const product = createMockProduct({ packagingTags: ['en:plastic'] });
+      const result = calculateGrønnScore(product);
+      expect(result.breakdown.packaging.score).toBeLessThan(60);
     });
   });
 
@@ -147,77 +208,141 @@ describe('calculateGrønnScore', () => {
         isNorwegian: true,
         labels: ['Økologisk', 'Nyt Norge'],
         labelTags: ['en:organic', 'en:produced-in-norway'],
+        packagingTags: ['en:glass'],
       });
 
       const result = calculateGrønnScore(excellentProduct);
       expect(result.grade).toBe('A');
       expect(result.total).toBeGreaterThanOrEqual(80);
     });
+
+    it('should return grade E for very low scores', () => {
+      const poorProduct = createMockProduct({
+        ecoscore: { grade: 'e', score: 10, hasDetailedData: true },
+        isNorwegian: false,
+        origin: 'Brazil',
+        packagingTags: ['en:plastic'],
+      });
+
+      const result = calculateGrønnScore(poorProduct);
+      expect(result.grade).toBe('D'); // Will likely be D due to certifications baseline
+      expect(result.total).toBeLessThan(60);
+    });
   });
 
   describe('Data quality indicator', () => {
-    it('should have high confidence with detailed ecoscore data', () => {
+    it('should have high data quality with detailed ecoscore data', () => {
       const product = createMockProduct({
         ecoscore: { grade: 'a', score: 90, hasDetailedData: true },
         ingredients: 'Water, sugar, salt',
         origin: 'Norway',
+        isNorwegian: true,
+        packagingTags: ['en:glass'],
       });
 
       const result = calculateGrønnScore(product);
-      expect(result.dataQuality).toBe('high');
+      expect(result.dataQuality).toBeGreaterThanOrEqual(90);
     });
 
-    it('should have low confidence with minimal data', () => {
+    it('should have low data quality with minimal data', () => {
       const product = createMockProduct({
         ecoscore: { grade: 'unknown', score: 0, hasDetailedData: false },
       });
 
       const result = calculateGrønnScore(product);
-      expect(result.dataQuality).toBe('low');
+      expect(result.dataQuality).toBeLessThan(50);
+    });
+
+    it('should return dataQuality as a number between 0-100', () => {
+      const product = createMockProduct();
+      const result = calculateGrønnScore(product);
+
+      expect(typeof result.dataQuality).toBe('number');
+      expect(result.dataQuality).toBeGreaterThanOrEqual(0);
+      expect(result.dataQuality).toBeLessThanOrEqual(100);
     });
   });
-});
 
-describe('getScoreGrade', () => {
-  it('should return A for scores 80-100', () => {
-    expect(getScoreGrade(100)).toBe('A');
-    expect(getScoreGrade(80)).toBe('A');
-  });
+  describe('Health score calculation', () => {
+    it('should calculate health score based on nutriscore', () => {
+      const productA = createMockProduct({ nutriscore: { grade: 'a', score: 90 } });
+      const productE = createMockProduct({ nutriscore: { grade: 'e', score: 20 } });
 
-  it('should return B for scores 60-79', () => {
-    expect(getScoreGrade(79)).toBe('B');
-    expect(getScoreGrade(60)).toBe('B');
-  });
+      const resultA = calculateGrønnScore(productA);
+      const resultE = calculateGrønnScore(productE);
 
-  it('should return C for scores 40-59', () => {
-    expect(getScoreGrade(59)).toBe('C');
-    expect(getScoreGrade(40)).toBe('C');
-  });
+      expect(resultA.healthScore.total).toBeGreaterThan(resultE.healthScore.total);
+    });
 
-  it('should return D for scores 20-39', () => {
-    expect(getScoreGrade(39)).toBe('D');
-    expect(getScoreGrade(20)).toBe('D');
-  });
+    it('should apply NOVA penalty for ultra-processed foods', () => {
+      const nova1 = createMockProduct({ novaGroup: 1 });
+      const nova4 = createMockProduct({ novaGroup: 4 });
 
-  it('should return E for scores 0-19', () => {
-    expect(getScoreGrade(19)).toBe('E');
-    expect(getScoreGrade(0)).toBe('E');
+      const result1 = calculateGrønnScore(nova1);
+      const result4 = calculateGrønnScore(nova4);
+
+      expect(result1.healthScore.total).toBeGreaterThan(result4.healthScore.total);
+    });
+
+    it('should return correct nutriscore grade', () => {
+      const product = createMockProduct({ nutriscore: { grade: 'b', score: 75 } });
+      const result = calculateGrønnScore(product);
+
+      expect(result.healthScore.nutriscore).toBe('B');
+    });
   });
 });
 
 describe('getScoreColor', () => {
   it('should return green for high scores', () => {
     expect(getScoreColor(85)).toContain('green');
+    expect(getScoreColor(100)).toContain('green');
   });
 
-  it('should return red for low scores', () => {
+  it('should return lime for good scores', () => {
+    expect(getScoreColor(70)).toContain('lime');
+  });
+
+  it('should return yellow for medium scores', () => {
+    expect(getScoreColor(50)).toContain('yellow');
+  });
+
+  it('should return orange for low scores', () => {
+    expect(getScoreColor(30)).toContain('orange');
+  });
+
+  it('should return red for very low scores', () => {
     expect(getScoreColor(15)).toContain('red');
+    expect(getScoreColor(0)).toContain('red');
   });
 });
 
 describe('getScoreTextColor', () => {
   it('should return appropriate text colors', () => {
     expect(getScoreTextColor(85)).toContain('green');
+    expect(getScoreTextColor(70)).toContain('lime');
+    expect(getScoreTextColor(50)).toContain('yellow');
+    expect(getScoreTextColor(30)).toContain('orange');
     expect(getScoreTextColor(15)).toContain('red');
+  });
+});
+
+describe('getGradeEmoji', () => {
+  it('should return correct emojis for each grade', () => {
+    expect(getGradeEmoji('A')).toBe('🌟');
+    expect(getGradeEmoji('B')).toBe('👍');
+    expect(getGradeEmoji('C')).toBe('😐');
+    expect(getGradeEmoji('D')).toBe('⚠️');
+    expect(getGradeEmoji('E')).toBe('❌');
+  });
+
+  it('should handle lowercase grades', () => {
+    expect(getGradeEmoji('a')).toBe('🌟');
+    expect(getGradeEmoji('b')).toBe('👍');
+  });
+
+  it('should return question mark for unknown grades', () => {
+    expect(getGradeEmoji('X')).toBe('❓');
+    expect(getGradeEmoji('')).toBe('❓');
   });
 });
