@@ -66,7 +66,8 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 z-10 rounded-t-3xl">
           <button
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            type="button"
+            onClick={onClose}
             aria-label={t.close}
             className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors touch-manipulation"
           >
@@ -82,7 +83,8 @@ export default function ProductCard({ product, score, onClose, alternatives = []
             <span className="text-xl" title={t.producedInNorway}>🇳🇴</span>
           )}
           <button
-            onClick={(e) => { e.stopPropagation(); handleShare(); }}
+            type="button"
+            onClick={handleShare}
             className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors touch-manipulation"
             aria-label={t.export}
           >
@@ -432,12 +434,9 @@ export default function ProductCard({ product, score, onClose, alternatives = []
               <div className="space-y-2">
                 {norwegianProducts.slice(0, 5).map((alt, i) => (
                   <button
+                    type="button"
                     key={`no-${alt.barcode}-${i}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onSelectProduct?.(alt.barcode);
-                    }}
+                    onClick={() => onSelectProduct?.(alt.barcode)}
                     className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors cursor-pointer text-left touch-manipulation"
                   >
                     <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 relative">
@@ -501,7 +500,8 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         {/* Action Button */}
         <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4">
           <button
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            type="button"
+            onClick={onClose}
             className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition-colors shadow-lg touch-manipulation"
           >
             {t.scanNewProduct}
