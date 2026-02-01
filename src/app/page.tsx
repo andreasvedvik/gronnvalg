@@ -373,32 +373,36 @@ export default function Home() {
               {t.appTagline}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Language Selector */}
-            <LanguageSelector />
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Language Selector - hidden on very small screens */}
+            <div className="hidden xs:block">
+              <LanguageSelector />
+            </div>
 
-            {/* Text Size Selector (Accessibility) */}
-            <TextSizeSelector />
+            {/* Text Size Selector - hidden on mobile */}
+            <div className="hidden sm:block">
+              <TextSizeSelector />
+            </div>
 
             <Tooltip content={darkMode ? t.lightMode : t.darkMode}>
               <button
                 onClick={toggleDarkMode}
-                className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+                className="w-10 h-10 sm:w-12 sm:h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
                 aria-label={darkMode ? t.lightMode : t.darkMode}
               >
-                {darkMode ? <Sun className="w-6 h-6 text-yellow-500" /> : <Moon className="w-6 h-6 text-gray-600" />}
+                {darkMode ? <Sun className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500" /> : <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />}
               </button>
             </Tooltip>
 
             <Tooltip content={t.shoppingList}>
               <button
                 onClick={() => setShowShoppingList(true)}
-                className="relative w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+                className="relative w-10 h-10 sm:w-12 sm:h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
                 aria-label={t.shoppingList}
               >
-                <ShoppingCart className="w-6 h-6 text-green-600 dark:text-green-400" />
+                <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
                 {shoppingList.filter(i => !i.checked).length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-green-500 text-white text-[10px] sm:text-xs font-bold rounded-full flex items-center justify-center">
                     {shoppingList.filter(i => !i.checked).length}
                   </span>
                 )}
@@ -408,10 +412,10 @@ export default function Home() {
             <Tooltip content={t.aboutUs}>
               <Link
                 href="/om"
-                className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+                className="w-10 h-10 sm:w-12 sm:h-12 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-soft border border-gray-100 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
                 aria-label={t.aboutUs}
               >
-                <Info className="w-6 h-6 text-green-600 dark:text-green-400" />
+                <Info className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-400" />
               </Link>
             </Tooltip>
           </div>

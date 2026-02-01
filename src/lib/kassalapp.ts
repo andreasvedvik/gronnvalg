@@ -87,15 +87,11 @@ function setCache(key: string, data: KassalappProduct | null): void {
   kassalappCache.set(key, { data, timestamp: Date.now() });
 }
 
-// Get API key from environment or localStorage (for client-side)
+// Get API key from environment (NEXT_PUBLIC_ prefix for client-side access)
 function getApiKey(): string | null {
-  // Server-side
-  if (typeof process !== 'undefined' && process.env?.KASSALAPP_API_KEY) {
-    return process.env.KASSALAPP_API_KEY;
-  }
-  // Client-side fallback
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('kassalapp_api_key');
+  // Works on both client and server with NEXT_PUBLIC_ prefix
+  if (process.env.NEXT_PUBLIC_KASSALAPP_API_KEY) {
+    return process.env.NEXT_PUBLIC_KASSALAPP_API_KEY;
   }
   return null;
 }
