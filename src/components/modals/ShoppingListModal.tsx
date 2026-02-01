@@ -1,9 +1,10 @@
 'use client';
 
-import { X, ShoppingCart, Plus, Check, Trash2, Search, Loader2, Share2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { X, ShoppingCart, Plus, Check, Trash2, Search, Loader2, Share2, Leaf } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { ProductData } from '@/lib/openfoodfacts';
+import { GrønnScoreResult } from '@/lib/scoring';
 import { useLanguage } from '@/lib/i18n';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 
@@ -15,10 +16,124 @@ interface ShoppingItem {
   imageUrl?: string;
 }
 
+interface ScanResult {
+  product: ProductData;
+  score: GrønnScoreResult;
+}
+
+// Mini Pie Chart component for cart greenness
+function CartGreennessPie({ scores, language }: { scores: number[]; language: string }) {
+  if (scores.length === 0) return null;
+
+  // Calculate distribution
+  const distribution = {
+    excellent: scores.filter(s => s >= 80).length, // A
+    good: scores.filter(s => s >= 60 && s < 80).length, // B
+    average: scores.filter(s => s >= 40 && s < 60).length, // C
+    poor: scores.filter(s => s < 40).length, // D & E
+  };
+
+  const total = scores.length;
+  const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / total);
+
+  // Calculate pie segments
+  const size = 80;
+  const strokeWidth = 12;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+
+  let currentOffset = 0;
+  const segments = [
+    { count: distribution.excellent, color: '#22c55e', label: 'A' },
+    { count: distribution.good, color: '#84cc16', label: 'B' },
+    { count: distribution.average, color: '#eab308', label: 'C' },
+    { count: distribution.poor, color: '#ef4444', label: 'D/E' },
+  ].filter(s => s.count > 0);
+
+  return (
+    <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl p-4 mb-4 border border-green-100 dark:border-green-800/30">
+      <div className="flex items-center gap-4">
+        {/* Pie Chart */}
+        <div className="relative" style={{ width: size, height: size }}>
+          <svg width={size} height={size} className="transform -rotate-90">
+            {/* Background circle */}
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={strokeWidth}
+              className="text-gray-200 dark:text-gray-700"
+            />
+            {/* Segments */}
+            {segments.map((segment, i) => {
+              const segmentLength = (segment.count / total) * circumference;
+              const offset = currentOffset;
+              currentOffset += segmentLength;
+
+              return (
+                <circle
+                  key={i}
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  fill="none"
+                  stroke={segment.color}
+                  strokeWidth={strokeWidth}
+                  strokeLinecap="butt"
+                  strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
+                  strokeDashoffset={-offset}
+                  className="transition-all duration-500"
+                />
+              );
+            })}
+          </svg>
+          {/* Center text */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className={`text-lg font-bold ${
+              avgScore >= 60 ? 'text-green-600' : avgScore >= 40 ? 'text-yellow-600' : 'text-red-600'
+            }`}>
+              {avgScore}
+            </span>
+            <span className="text-[9px] text-gray-500 dark:text-gray-400">snitt</span>
+          </div>
+        </div>
+
+        {/* Legend & Info */}
+        <div className="flex-1">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Leaf className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+              {language === 'nb' ? 'Handlekurv-score' : 'Cart Score'}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {segments.map((segment, i) => (
+              <div key={i} className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: segment.color }} />
+                <span className="text-xs text-gray-600 dark:text-gray-400">
+                  {segment.label}: {segment.count}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">
+            {language === 'nb'
+              ? `${scores.length} produkter med miljøscore`
+              : `${scores.length} products with eco score`}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface ShoppingListModalProps {
   isOpen: boolean;
   onClose: () => void;
   items: ShoppingItem[];
+  recentScans?: ScanResult[];
   onAddItem: (name: string, barcode?: string, imageUrl?: string) => void;
   onToggleItem: (id: string) => void;
   onRemoveItem: (id: string) => void;
@@ -29,17 +144,29 @@ export default function ShoppingListModal({
   isOpen,
   onClose,
   items,
+  recentScans = [],
   onAddItem,
   onToggleItem,
   onRemoveItem,
   onClearCompleted,
 }: ShoppingListModalProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const focusTrapRef = useFocusTrap(isOpen, onClose);
   const [newItem, setNewItem] = useState('');
   const [searchResults, setSearchResults] = useState<ProductData[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Calculate scores for items in the shopping list that have barcodes
+  const itemScores = useMemo(() => {
+    const uncheckedItems = items.filter(i => !i.checked && i.barcode);
+    return uncheckedItems
+      .map(item => {
+        const scan = recentScans.find(s => s.product.barcode === item.barcode);
+        return scan?.score.total;
+      })
+      .filter((score): score is number => score !== undefined);
+  }, [items, recentScans]);
 
   // Debounced search
   useEffect(() => {
@@ -233,6 +360,11 @@ export default function ShoppingListModal({
               className="fixed inset-0 z-0"
               onClick={() => setShowSuggestions(false)}
             />
+          )}
+
+          {/* Cart Greenness Pie Chart */}
+          {itemScores.length >= 2 && (
+            <CartGreennessPie scores={itemScores} language={language} />
           )}
 
           {/* Shopping list items */}

@@ -73,6 +73,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [notFoundBarcode, setNotFoundBarcode] = useState<string | null>(null);
   const [recentScans, setRecentScans] = useState<ScanResult[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]); // Barcodes of favorited products
   const [isScrolled, setIsScrolled] = useState(false);
 
   // UI state
@@ -126,6 +127,16 @@ export default function Home() {
       }
     }
 
+    // Load favorites
+    const savedFavorites = localStorage.getItem('gronnest-favorites');
+    if (savedFavorites) {
+      try {
+        setFavorites(JSON.parse(savedFavorites));
+      } catch {
+        // Failed to parse favorites from localStorage
+      }
+    }
+
     // Mark initialization as complete
     setIsInitializing(false);
 
@@ -144,6 +155,11 @@ export default function Home() {
   useEffect(() => {
     localStorage.setItem('gronnest-shopping', JSON.stringify(shoppingList));
   }, [shoppingList]);
+
+  // Save favorites to localStorage
+  useEffect(() => {
+    localStorage.setItem('gronnest-favorites', JSON.stringify(favorites));
+  }, [favorites]);
 
   // Handle scroll for sticky header
   useEffect(() => {
@@ -325,6 +341,20 @@ export default function Home() {
     }
   };
 
+  // Toggle favorite
+  const toggleFavorite = (barcode: string) => {
+    setFavorites(prev => {
+      if (prev.includes(barcode)) {
+        return prev.filter(b => b !== barcode);
+      } else {
+        return [...prev, barcode];
+      }
+    });
+  };
+
+  // Get favorite scans (from recent scans that are favorited)
+  const favoriteScans = recentScans.filter(scan => favorites.includes(scan.product.barcode));
+
   // Calculate average score
   const averageScore = recentScans.length > 0
     ? Math.round(recentScans.reduce((sum, r) => sum + r.score.total, 0) / recentScans.length)
@@ -355,14 +385,25 @@ export default function Home() {
               <LanguageSelector />
             </div>
 
-            {/* Dark mode toggle */}
-            <Tooltip content={darkMode ? t.lightMode : t.darkMode}>
+            {/* Eco Mode toggle */}
+            <Tooltip content={darkMode ? (language === 'nb' ? 'Lys modus' : 'Light mode') : (language === 'nb' ? 'Øko-modus (sparer energi)' : 'Eco mode (saves energy)')}>
               <button
                 onClick={toggleDarkMode}
-                className="w-10 h-10 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm border border-gray-200 dark:border-gray-700 transition-all hover:scale-105 active:scale-95"
+                className={`flex items-center gap-1.5 px-3 h-10 rounded-full shadow-sm border transition-all hover:scale-105 active:scale-95 ${
+                  darkMode
+                    ? 'bg-green-600 border-green-500 text-white'
+                    : 'bg-white border-gray-200 text-gray-600'
+                }`}
                 aria-label={darkMode ? t.lightMode : t.darkMode}
               >
-                {darkMode ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-500" />}
+                {darkMode ? (
+                  <>
+                    <Leaf className="w-4 h-4" />
+                    <span className="text-xs font-medium hidden sm:inline">{language === 'nb' ? 'Øko' : 'Eco'}</span>
+                  </>
+                ) : (
+                  <Moon className="w-5 h-5" />
+                )}
               </button>
             </Tooltip>
 
@@ -504,9 +545,12 @@ export default function Home() {
       {/* Scan History */}
       <ScanHistory
         recentScans={recentScans}
+        favoriteScans={favoriteScans}
+        favorites={favorites}
         onSelectScan={setScanResult}
         onAddToShoppingList={addProductToShoppingList}
         onAddToComparison={addToComparison}
+        onToggleFavorite={toggleFavorite}
         onClearHistory={clearHistory}
         compareCount={compareProducts.length}
       />
@@ -548,6 +592,7 @@ export default function Home() {
             isOpen={showShoppingList}
             onClose={() => setShowShoppingList(false)}
             items={shoppingList}
+            recentScans={recentScans}
             onAddItem={addShoppingItem}
             onToggleItem={toggleShoppingItem}
             onRemoveItem={removeShoppingItem}
