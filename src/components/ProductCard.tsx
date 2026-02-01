@@ -144,34 +144,29 @@ export default function ProductCard({ product, score, onClose, alternatives = []
     arr.findIndex(x => x.barcode === p.barcode) === i
   );
   const hasNorwegianProducts = norwegianProducts.length > 0;
-  // Handle close with better mobile support
-  const handleClose = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onClose();
-  };
 
   return (
     <div
       className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center"
       onClick={onClose}
-      onTouchEnd={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
     >
-      <div className="bg-white dark:bg-gray-900 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="bg-white dark:bg-gray-900 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 z-10 rounded-t-3xl">
           <button
             type="button"
-            onClick={handleClose}
-            onTouchEnd={handleClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
             aria-label={t.close}
-            className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors touch-manipulation select-none"
+            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
+            style={{ touchAction: 'manipulation' }}
           >
-            <X className="w-5 h-5 text-gray-600 dark:text-gray-400 pointer-events-none" />
+            <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
           </button>
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-gray-900 dark:text-white truncate">{product.name}</h2>
