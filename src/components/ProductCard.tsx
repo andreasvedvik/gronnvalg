@@ -74,8 +74,8 @@ export default function ProductCard({ product, score, onClose, alternatives = []
             <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-gray-900 truncate">{product.name}</h2>
-            <p className="text-sm text-gray-500 truncate">
+            <h2 className="font-semibold text-gray-900 dark:text-white truncate">{product.name}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
               {product.brand} {product.origin && `• ${product.origin}`}
             </p>
           </div>
@@ -93,10 +93,10 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         </div>
 
         {/* Product Hero */}
-        <div className="bg-gradient-to-b from-green-50 to-white px-6 py-6">
+        <div className="bg-gradient-to-b from-green-50 to-white dark:from-gray-800 dark:to-gray-900 px-6 py-6">
           <div className="flex items-start gap-4">
             {/* Product Image */}
-            <div className="w-24 h-24 bg-white rounded-2xl flex items-center justify-center overflow-hidden border border-gray-100 shadow-sm flex-shrink-0 relative">
+            <div className="w-24 h-24 bg-white dark:bg-gray-800 rounded-2xl flex items-center justify-center overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm flex-shrink-0 relative">
               {product.imageUrl ? (
                 <Image
                   src={product.imageUrl}
@@ -235,7 +235,7 @@ export default function ProductCard({ product, score, onClose, alternatives = []
 
         {/* Allergen Warning - Show prominently if allergens exist */}
         {(product.allergenInfo.hasAllergens || product.allergenInfo.hasTraces) && (
-          <div className="mx-4 mt-2 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+          <div className="mx-4 mt-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-2xl p-4">
             <h3 className="font-semibold text-amber-800 mb-2 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-600" />
               {t.allergenWarning}
@@ -274,10 +274,10 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         )}
 
         {/* Score Breakdown */}
-        <div className="mx-4 mt-2 bg-gray-50 rounded-2xl p-4">
+        <div className="mx-4 mt-2 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-              <Leaf className="w-4 h-4 text-green-600" />
+            <h3 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Leaf className="w-4 h-4 text-green-600 dark:text-green-400" />
               {t.whyThisScore}
             </h3>
             {/* Data Quality Indicator */}
@@ -379,13 +379,13 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         )}
 
         {/* Health Details */}
-        <div className="mx-4 mt-4 bg-gray-50 rounded-2xl p-4">
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <div className="mx-4 mt-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4">
+          <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
             <Heart className="w-4 h-4 text-red-500" />
             {t.healthInfo}
           </h3>
           <div className="flex gap-4">
-            <div className="flex-1 text-center p-3 bg-white rounded-xl">
+            <div className="flex-1 text-center p-3 bg-white dark:bg-gray-800 rounded-xl">
               <div className="text-sm text-gray-500 mb-0.5">{t.nutriScore}</div>
               <div className="text-[10px] text-gray-400 mb-1">{t.nutriScoreExplain}</div>
               <div className={`text-2xl font-bold ${getScoreTextColor(score.healthScore.total)}`}>
