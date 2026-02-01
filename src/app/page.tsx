@@ -447,33 +447,46 @@ export default function Home() {
         <WelcomeCard />
       )}
 
-      {/* Main Scan Button */}
+      {/* Main Scan Button - Glassmorphism Design */}
       <div className="flex flex-col items-center justify-center px-6 py-10 animate-fade-in-up stagger-3">
-        <div className="relative">
-          <div className="absolute inset-0 rounded-full animate-pulse-ring" />
-          <button
-            onClick={() => { setShowScanner(true); setNotFoundBarcode(null); }}
-            className="relative scan-button animate-breathe animate-scan-pulse w-44 h-44 rounded-full flex flex-col items-center justify-center"
-            aria-label={t.scanProduct}
-          >
-            <div className="absolute inset-6 border-2 border-white/30 rounded-lg">
-              <div className="absolute -top-0.5 -left-0.5 w-5 h-5 border-t-[3px] border-l-[3px] border-white rounded-tl-md" />
-              <div className="absolute -top-0.5 -right-0.5 w-5 h-5 border-t-[3px] border-r-[3px] border-white rounded-tr-md" />
-              <div className="absolute -bottom-0.5 -left-0.5 w-5 h-5 border-b-[3px] border-l-[3px] border-white rounded-bl-md" />
-              <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 border-b-[3px] border-r-[3px] border-white rounded-br-md" />
+        <button
+          onClick={() => { setShowScanner(true); setNotFoundBarcode(null); }}
+          className="group relative px-8 py-6 rounded-2xl backdrop-blur-xl bg-white/70 dark:bg-gray-800/70 border border-white/50 dark:border-gray-600/50 shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+          aria-label={t.scanProduct}
+        >
+          {/* Gradient glow behind */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-green-400 via-emerald-500 to-teal-400 rounded-2xl opacity-20 group-hover:opacity-30 blur-xl transition-opacity" />
+
+          {/* Content */}
+          <div className="relative flex items-center gap-5">
+            {/* Icon container */}
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg group-hover:shadow-green-500/25 transition-shadow">
+              <Scan className="w-8 h-8 text-white" strokeWidth={2} />
             </div>
-            <Scan className="w-14 h-14 text-white mb-2" strokeWidth={1.5} />
-            <span className="text-white font-semibold text-lg">{t.scanProduct}</span>
-          </button>
-        </div>
-        <p className="text-base font-medium text-gray-500 dark:text-gray-400 mt-6">
-          {t.tapToScan}
-        </p>
+
+            {/* Text */}
+            <div className="text-left">
+              <span className="block text-xl font-bold text-gray-800 dark:text-white">
+                {t.scanProduct}
+              </span>
+              <span className="block text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                {t.tapToScan}
+              </span>
+            </div>
+
+            {/* Arrow */}
+            <div className="ml-2 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-900/50 transition-colors">
+              <svg className="w-5 h-5 text-green-600 dark:text-green-400 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </button>
 
         {/* Image scan option */}
         <button
           onClick={() => { setShowImageScanner(true); setNotFoundBarcode(null); }}
-          className="mt-4 flex items-center gap-2 px-4 py-2 text-sm text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+          className="mt-6 flex items-center gap-2 px-5 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50 hover:border-green-300 dark:hover:border-green-700 transition-all"
         >
           <Camera className="w-4 h-4" />
           {language === 'nb' ? 'Eller ta bilde av produktet' : 'Or take a photo of the product'}
