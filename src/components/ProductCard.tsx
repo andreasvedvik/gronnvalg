@@ -6,7 +6,7 @@ import { GrønnScoreResult, getScoreColor, getScoreTextColor } from '@/lib/scori
 import { X, Leaf, Heart, Truck, Package, Award, Recycle, ChevronRight, ExternalLink, AlertCircle, HelpCircle, AlertTriangle, Info, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
 import Image from 'next/image';
 import { useLanguage } from '@/lib/i18n';
-import { getProductCertifications, CertificationInfo } from '@/lib/certifications';
+import { getProductCertifications, CertificationInfo, formatLabelName, shouldHideLabel } from '@/lib/certifications';
 
 // Circular Score Ring Component for Product Card
 function ScoreRing({ score, size = 80, strokeWidth = 6, label, icon }: {
@@ -241,21 +241,26 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                     {language === 'nb' ? cert.name : cert.nameEn}
                   </span>
                 ))}
-                {/* Show unrecognized labels as generic badges */}
+                {/* Show unrecognized labels as generic badges (cleaned up) */}
                 {product.labels
-                  .filter(label => !certifications.some(cert =>
-                    label.toLowerCase().includes(cert.id) ||
-                    label.toLowerCase().includes(cert.name.toLowerCase()) ||
-                    label.toLowerCase().includes(cert.nameEn.toLowerCase())
-                  ))
+                  .filter(label =>
+                    // Not already shown as a certification
+                    !certifications.some(cert =>
+                      label.toLowerCase().includes(cert.id) ||
+                      label.toLowerCase().includes(cert.name.toLowerCase()) ||
+                      label.toLowerCase().includes(cert.nameEn.toLowerCase())
+                    ) &&
+                    // Not in the hidden list
+                    !shouldHideLabel(label)
+                  )
                   .slice(0, 3)
                   .map((label, i) => (
                     <span
                       key={`label-${i}`}
-                      className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-xs font-medium flex items-center gap-1"
+                      className="px-3 py-1.5 bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded-full text-xs font-medium flex items-center gap-1"
                     >
                       <Award className="w-3 h-3" />
-                      {label}
+                      {formatLabelName(label)}
                     </span>
                   ))
                 }

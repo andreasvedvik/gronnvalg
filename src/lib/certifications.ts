@@ -141,6 +141,43 @@ export const CERTIFICATIONS: Record<string, CertificationInfo> = {
     icon: '🥛',
     color: 'bg-blue-100 text-blue-800',
   },
+  'green-dot': {
+    id: 'green-dot',
+    name: 'Grønt Punkt',
+    nameEn: 'Green Dot',
+    description: 'Produsenten har betalt avgift til et retursystem for emballasje. NB: Dette betyr ikke at produktet er miljøvennlig eller resirkulerbart.',
+    descriptionEn: 'The producer has paid a fee to a packaging return system. Note: This does not mean the product is eco-friendly or recyclable.',
+    icon: '♻️',
+    color: 'bg-gray-100 text-gray-600', // Gray to indicate it's not a real eco-certification
+  },
+  'fsc': {
+    id: 'fsc',
+    name: 'FSC',
+    nameEn: 'FSC',
+    description: 'Forest Stewardship Council - garanterer at tre/papir kommer fra bærekraftig skogbruk.',
+    descriptionEn: 'Forest Stewardship Council - guarantees wood/paper comes from sustainable forestry.',
+    icon: '🌲',
+    color: 'bg-green-100 text-green-800',
+  },
+  'pefc': {
+    id: 'pefc',
+    name: 'PEFC',
+    nameEn: 'PEFC',
+    description: 'Programme for the Endorsement of Forest Certification - sertifisering for bærekraftig skogbruk.',
+    descriptionEn: 'Programme for the Endorsement of Forest Certification - certification for sustainable forestry.',
+    icon: '🌳',
+    color: 'bg-green-100 text-green-800',
+  },
+  'svanemerket': {
+    id: 'svanemerket',
+    name: 'Svanemerket',
+    nameEn: 'Nordic Swan Ecolabel',
+    description: 'Det offisielle nordiske miljømerket - strenge krav til miljøpåvirkning gjennom hele livssyklusen.',
+    descriptionEn: 'The official Nordic ecolabel - strict requirements for environmental impact throughout the lifecycle.',
+    icon: '🦢',
+    color: 'bg-green-100 text-green-800',
+    url: 'https://svanemerket.no/',
+  },
 };
 
 // Find certification info by matching label text
@@ -195,8 +232,49 @@ export function findCertification(labelText: string): CertificationInfo | undefi
   if (lowerLabel.includes('laktosefri') || lowerLabel.includes('lactose-free') || lowerLabel.includes('lactose free')) {
     return CERTIFICATIONS['lactose-free'];
   }
+  if (lowerLabel.includes('green-dot') || lowerLabel.includes('grønt punkt') || lowerLabel.includes('grüner punkt')) {
+    return CERTIFICATIONS['green-dot'];
+  }
+  if (lowerLabel.includes('fsc')) {
+    return CERTIFICATIONS['fsc'];
+  }
+  if (lowerLabel.includes('pefc')) {
+    return CERTIFICATIONS['pefc'];
+  }
+  if (lowerLabel.includes('svanemerket') || lowerLabel.includes('nordic-swan') || lowerLabel.includes('swan')) {
+    return CERTIFICATIONS['svanemerket'];
+  }
 
   return undefined;
+}
+
+// Clean up raw tag name to a readable label
+export function formatLabelName(rawLabel: string): string {
+  // Remove language prefix (en:, nb:, de:, etc.)
+  let cleaned = rawLabel.replace(/^[a-z]{2}:/, '');
+
+  // Replace hyphens and underscores with spaces
+  cleaned = cleaned.replace(/[-_]/g, ' ');
+
+  // Capitalize first letter of each word
+  cleaned = cleaned.replace(/\b\w/g, c => c.toUpperCase());
+
+  return cleaned;
+}
+
+// Labels that should be hidden (not useful to show)
+const HIDDEN_LABELS = [
+  'green-dot', // Already shown as certification
+  'point-vert',
+  'grüner-punkt',
+  'triman', // French recycling symbol
+  'tidyman', // Litter symbol
+];
+
+// Check if a label should be hidden
+export function shouldHideLabel(label: string): boolean {
+  const lower = label.toLowerCase();
+  return HIDDEN_LABELS.some(hidden => lower.includes(hidden));
 }
 
 // Get all certifications for a product
