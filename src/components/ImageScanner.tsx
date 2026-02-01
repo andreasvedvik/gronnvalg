@@ -25,6 +25,8 @@ export default function ImageScanner({ onSelectProduct, onClose }: ImageScannerP
   const [extractedText, setExtractedText] = useState<string>('');
   const [searchResults, setSearchResults] = useState<ProductData[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [manualQuery, setManualQuery] = useState<string>('');
+  const [showManualSearch, setShowManualSearch] = useState(false);
 
   const texts = {
     nb: {
@@ -37,11 +39,16 @@ export default function ImageScanner({ onSelectProduct, onClose }: ImageScannerP
       extractingText: 'Leser tekst...',
       searching: 'Søker etter produkter...',
       foundProducts: 'Fant {count} produkter',
-      noResults: 'Ingen produkter funnet. Prøv å ta et tydeligere bilde av produktnavnet.',
+      noResults: 'Ingen produkter funnet.',
       selectProduct: 'Velg riktig produkt:',
       extractedKeywords: 'Gjenkjent tekst:',
       cameraError: 'Kunne ikke starte kameraet',
       tryBarcode: 'Prøv å skanne strekkoden i stedet',
+      manualSearch: 'Søk manuelt',
+      searchPlaceholder: 'Skriv produktnavn...',
+      search: 'Søk',
+      noTextFound: 'Kunne ikke lese tekst fra bildet. Prøv igjen med bedre lys og fokus.',
+      tryManual: 'Eller søk manuelt:',
     },
     en: {
       title: 'Take a photo of the product',
@@ -53,11 +60,16 @@ export default function ImageScanner({ onSelectProduct, onClose }: ImageScannerP
       extractingText: 'Reading text...',
       searching: 'Searching for products...',
       foundProducts: 'Found {count} products',
-      noResults: 'No products found. Try taking a clearer photo of the product name.',
+      noResults: 'No products found.',
       selectProduct: 'Select the correct product:',
       extractedKeywords: 'Recognized text:',
       cameraError: 'Could not start camera',
       tryBarcode: 'Try scanning the barcode instead',
+      manualSearch: 'Search manually',
+      searchPlaceholder: 'Type product name...',
+      search: 'Search',
+      noTextFound: 'Could not read text from image. Try again with better lighting and focus.',
+      tryManual: 'Or search manually:',
     },
   };
 
@@ -127,6 +139,7 @@ export default function ImageScanner({ onSelectProduct, onClose }: ImageScannerP
 
     setScanState('processing');
     setError(null);
+    setShowManualSearch(false);
 
     try {
       // Extract text from image
@@ -137,14 +150,60 @@ export default function ImageScanner({ onSelectProduct, onClose }: ImageScannerP
       const keywords = extractProductKeywords(text);
 
       if (keywords.length === 0) {
+        setError(t.noTextFound);
+        setShowManualSearch(true);
+        setScanState('captured');
+        return;
+      }
+
+      // Try different search strategies
+      let results: ProductData[] = [];
+
+      // Strategy 1: Full query with first 5 keywords
+      const query = buildSearchQuery(keywords);
+      results = await searchProducts(query, 10);
+
+      // Strategy 2: If no results, try with just first 3 keywords
+      if (results.length === 0 && keywords.length > 3) {
+        results = await searchProducts(keywords.slice(0, 3).join(' '), 10);
+      }
+
+      // Strategy 3: If still no results, try individual keywords
+      if (results.length === 0) {
+        for (const keyword of keywords.slice(0, 3)) {
+          if (keyword.length > 3) {
+            results = await searchProducts(keyword, 5);
+            if (results.length > 0) break;
+          }
+        }
+      }
+
+      if (results.length === 0) {
+        setManualQuery(keywords.slice(0, 3).join(' '));
+        setShowManualSearch(true);
         setError(t.noResults);
         setScanState('captured');
         return;
       }
 
-      // Build search query and search
-      const query = buildSearchQuery(keywords);
-      const results = await searchProducts(query, 10);
+      setSearchResults(results);
+      setScanState('results');
+    } catch (err) {
+      setShowManualSearch(true);
+      setError(t.noResults);
+      setScanState('captured');
+    }
+  }, [capturedImage, t.noResults, t.noTextFound]);
+
+  // Manual search
+  const handleManualSearch = useCallback(async () => {
+    if (!manualQuery.trim()) return;
+
+    setScanState('processing');
+    setError(null);
+
+    try {
+      const results = await searchProducts(manualQuery.trim(), 10);
 
       if (results.length === 0) {
         setError(t.noResults);
@@ -154,11 +213,11 @@ export default function ImageScanner({ onSelectProduct, onClose }: ImageScannerP
 
       setSearchResults(results);
       setScanState('results');
-    } catch (err) {
+    } catch {
       setError(t.noResults);
       setScanState('captured');
     }
-  }, [capturedImage, t.noResults]);
+  }, [manualQuery, t.noResults]);
 
   // Reset to camera
   const resetToCamera = useCallback(() => {
@@ -273,10 +332,44 @@ export default function ImageScanner({ onSelectProduct, onClose }: ImageScannerP
           </div>
         )}
 
-        {/* Error message */}
-        {error && (
-          <div className="absolute bottom-24 left-4 right-4 p-4 bg-red-500/90 rounded-xl text-white text-center">
-            {error}
+        {/* Error message and manual search */}
+        {error && scanState === 'captured' && (
+          <div className="absolute bottom-24 left-4 right-4 space-y-3">
+            <div className="p-4 bg-red-500/90 rounded-xl text-white text-center">
+              {error}
+            </div>
+
+            {/* Show extracted text if available */}
+            {extractedText && (
+              <div className="p-3 bg-gray-800/90 rounded-xl">
+                <p className="text-xs text-gray-400 mb-1">{t.extractedKeywords}</p>
+                <p className="text-white text-sm">{extractProductKeywords(extractedText).join(', ') || '(ingen tekst funnet)'}</p>
+              </div>
+            )}
+
+            {/* Manual search input */}
+            {showManualSearch && (
+              <div className="p-3 bg-gray-800/90 rounded-xl">
+                <p className="text-xs text-gray-400 mb-2">{t.tryManual}</p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={manualQuery}
+                    onChange={(e) => setManualQuery(e.target.value)}
+                    placeholder={t.searchPlaceholder}
+                    className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
+                  />
+                  <button
+                    onClick={handleManualSearch}
+                    disabled={!manualQuery.trim()}
+                    className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                  >
+                    {t.search}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
