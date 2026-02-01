@@ -175,19 +175,20 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
       />
 
       {/* Modal container - flex column layout */}
-      <div className="relative z-10 bg-white dark:bg-gray-900 w-full max-w-md max-h-[90vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col">
+      <div
+        className="relative z-10 bg-white dark:bg-gray-900 w-full max-w-md max-h-[90vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header - fixed at top */}
         <div className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 rounded-t-3xl">
           <button
             type="button"
             onClick={handleClose}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-            }}
             aria-label={t.close}
-            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors z-20"
+            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors cursor-pointer"
+            style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}
           >
-            <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+            <X className="w-6 h-6 text-gray-600 dark:text-gray-400 pointer-events-none" />
           </button>
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-gray-900 dark:text-white truncate">{product.name}</h2>
@@ -620,7 +621,8 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
           <button
             type="button"
             onClick={handleScanAgain}
-            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 active:bg-green-700 transition-colors shadow-lg"
+            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 active:bg-green-700 transition-colors shadow-lg cursor-pointer"
+            style={{ touchAction: 'manipulation', pointerEvents: 'auto' }}
           >
             {t.scanNewProduct}
           </button>
