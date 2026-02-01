@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useEffect, lazy, Suspense, memo } from 'react';
-import { Leaf, Scan, Moon, Sun, Info, ShoppingCart, MessageCircle, ExternalLink, Plus, Camera } from 'lucide-react';
+import { Leaf, Scan, Moon, Sun, Info, ShoppingCart, MessageCircle, ExternalLink, Plus } from 'lucide-react';
 import Tooltip from '@/components/Tooltip';
 import Link from 'next/link';
 
 // Components
 import BarcodeScanner from '@/components/BarcodeScanner';
-import ImageScanner from '@/components/ImageScanner';
 import ProductCard from '@/components/ProductCard';
 import StatsCard from '@/components/StatsCard';
 import WelcomeCard from '@/components/WelcomeCard';
@@ -72,7 +71,6 @@ export default function Home() {
 
   // Core state
   const [showScanner, setShowScanner] = useState(false);
-  const [showImageScanner, setShowImageScanner] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -482,15 +480,6 @@ export default function Home() {
             </div>
           </div>
         </button>
-
-        {/* Image scan option */}
-        <button
-          onClick={() => { setShowImageScanner(true); setNotFoundBarcode(null); }}
-          className="mt-6 flex items-center gap-2 px-5 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-full border border-gray-200/50 dark:border-gray-700/50 hover:border-green-300 dark:hover:border-green-700 transition-all"
-        >
-          <Camera className="w-4 h-4" />
-          {language === 'nb' ? 'Eller ta bilde av produktet' : 'Or take a photo of the product'}
-        </button>
       </div>
 
       {/* Error Message */}
@@ -638,17 +627,6 @@ export default function Home() {
           onScan={handleScan}
           onClose={() => setShowScanner(false)}
           isLoading={isLoading}
-        />
-      )}
-
-      {/* Image Scanner Modal */}
-      {showImageScanner && (
-        <ImageScanner
-          onSelectProduct={(barcode) => {
-            setShowImageScanner(false);
-            handleScan(barcode);
-          }}
-          onClose={() => setShowImageScanner(false)}
         />
       )}
 
