@@ -151,38 +151,39 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
   );
   const hasNorwegianProducts = norwegianProducts.length > 0;
 
+  // Handle close with proper touch support
+  const handleClose = () => {
+    onClose();
+  };
+
+  // Handle scan again with proper touch support
+  const handleScanAgain = () => {
+    if (onScanAgain) {
+      onScanAgain();
+    } else {
+      onClose();
+    }
+  };
+
   return (
-    <div
-      className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      {/* Backdrop - separate element for closing */}
       <div
-        className="bg-white dark:bg-gray-900 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div
-          className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 z-10 rounded-t-3xl"
-          style={{ WebkitTransform: 'translateZ(0)' }} // Force GPU layer for iOS sticky
-        >
+        className="absolute inset-0 bg-black/50"
+        onClick={handleClose}
+        onTouchEnd={handleClose}
+        aria-hidden="true"
+      />
+
+      {/* Modal container - flex column layout */}
+      <div className="relative bg-white dark:bg-gray-900 w-full max-w-md max-h-[90vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col">
+        {/* Header - fixed at top */}
+        <div className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 rounded-t-3xl">
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              onClose();
-            }}
-            onTouchEnd={(e) => {
-              e.stopPropagation();
-            }}
+            onClick={handleClose}
             aria-label={t.close}
-            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors select-none"
-            style={{
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-              WebkitUserSelect: 'none',
-              cursor: 'pointer'
-            }}
+            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
           >
             <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
           </button>
@@ -195,15 +196,17 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
           <button
             type="button"
             onClick={handleShare}
-            className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors touch-manipulation"
+            className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label={t.export}
           >
             <Share2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
 
-        {/* Product Hero - Redesigned with larger scores */}
-        <div className="bg-gradient-to-b from-green-50 to-white dark:from-gray-800 dark:to-gray-900 px-6 py-6">
+        {/* Scrollable content area */}
+        <div className="flex-1 overflow-y-auto">
+          {/* Product Hero - Redesigned with larger scores */}
+          <div className="bg-gradient-to-b from-green-50 to-white dark:from-gray-800 dark:to-gray-900 px-6 py-6">
           {/* Product Image - Centered at top */}
           <div className="flex justify-center mb-4">
             <div className="w-28 h-28 bg-white dark:bg-gray-800 rounded-3xl flex items-center justify-center overflow-hidden border border-gray-100 dark:border-gray-700 shadow-lg relative">
@@ -608,34 +611,14 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
             <ExternalLink className="w-4 h-4" />
           </a>
         </div>
+        </div>{/* End scrollable content */}
 
-        {/* Action Button - Fixed at bottom for reliable mobile touch */}
-        <div
-          className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4 pb-safe"
-          style={{ WebkitTransform: 'translateZ(0)' }} // Force GPU layer for iOS
-        >
+        {/* Action Button - Fixed at bottom */}
+        <div className="flex-shrink-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4">
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              if (onScanAgain) {
-                onScanAgain();
-              } else {
-                onClose();
-              }
-            }}
-            onTouchEnd={(e) => {
-              // Backup touch handler for iOS
-              e.stopPropagation();
-            }}
-            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 active:bg-green-700 transition-colors shadow-lg select-none"
-            style={{
-              touchAction: 'manipulation',
-              WebkitTapHighlightColor: 'transparent',
-              WebkitUserSelect: 'none',
-              cursor: 'pointer'
-            }}
+            onClick={handleScanAgain}
+            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 active:bg-green-700 transition-colors shadow-lg"
           >
             {t.scanNewProduct}
           </button>
