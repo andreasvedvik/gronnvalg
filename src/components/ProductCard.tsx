@@ -171,19 +171,21 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
       <div
         className="absolute inset-0 bg-black/50"
         onClick={handleClose}
-        onTouchEnd={handleClose}
         aria-hidden="true"
       />
 
       {/* Modal container - flex column layout */}
-      <div className="relative bg-white dark:bg-gray-900 w-full max-w-md max-h-[90vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col">
+      <div className="relative z-10 bg-white dark:bg-gray-900 w-full max-w-md max-h-[90vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col">
         {/* Header - fixed at top */}
         <div className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 rounded-t-3xl">
           <button
             type="button"
             onClick={handleClose}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+            }}
             aria-label={t.close}
-            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors"
+            className="min-w-[48px] min-h-[48px] w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200 dark:active:bg-gray-700 transition-colors z-20"
           >
             <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
           </button>
