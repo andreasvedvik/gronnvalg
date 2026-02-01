@@ -55,6 +55,7 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
 
         // Dynamically import zxing for barcode scanning
         const { BrowserMultiFormatReader } = await import('@zxing/browser');
+        const { DecodeHintType, BarcodeFormat } = await import('@zxing/library');
 
         // Check again after async import
         if (!isMounted) {
@@ -62,10 +63,25 @@ export default function BarcodeScanner({ onScan, onClose, isLoading }: BarcodeSc
           return;
         }
 
-        const codeReader = new BrowserMultiFormatReader();
+        // Configure hints for better scanning from any angle
+        const hints = new Map();
+        // Try harder to find barcodes (slower but more accurate)
+        hints.set(DecodeHintType.TRY_HARDER, true);
+        // Support common barcode formats
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+          BarcodeFormat.EAN_13,
+          BarcodeFormat.EAN_8,
+          BarcodeFormat.UPC_A,
+          BarcodeFormat.UPC_E,
+          BarcodeFormat.CODE_128,
+          BarcodeFormat.CODE_39,
+          BarcodeFormat.ITF,
+        ]);
+
+        const codeReader = new BrowserMultiFormatReader(hints);
         scannerRef.current = codeReader;
 
-        // Start continuous scanning
+        // Start continuous scanning with faster interval for better responsiveness
         if (videoRef.current) {
           codeReader.decodeFromVideoElement(videoRef.current, (result) => {
             if (result) {

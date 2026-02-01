@@ -652,7 +652,8 @@ export default function Home() {
           onClose={() => setScanResult(null)}
           onScanAgain={() => {
             setScanResult(null); // Close current card
-            setShowScanner(true); // Open scanner immediately
+            // Small delay to ensure modal closes before scanner opens
+            setTimeout(() => setShowScanner(true), 50);
           }}
           onSelectProduct={(barcode) => {
             setScanResult(null); // Close current card
