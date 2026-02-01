@@ -651,9 +651,10 @@ export default function Home() {
           isLoadingExtras={isLoadingExtras}
           onClose={() => setScanResult(null)}
           onScanAgain={() => {
-            setScanResult(null); // Close current card
-            // Small delay to ensure modal closes before scanner opens
-            setTimeout(() => setShowScanner(true), 50);
+            // On mobile, camera access must happen directly from user interaction
+            // Set both states together - React will batch these updates
+            setShowScanner(true); // Open scanner first (camera permission needs direct user action)
+            setScanResult(null); // Then close product card
           }}
           onSelectProduct={(barcode) => {
             setScanResult(null); // Close current card

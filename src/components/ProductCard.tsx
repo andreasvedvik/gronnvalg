@@ -133,7 +133,12 @@ export default function ProductCard({ product, score, onClose, onScanAgain, alte
   };
 
   // Get certification explanations for product labels
-  const certifications = getProductCertifications(product.labels, product.labelTags || []);
+  // Pass allergens to filter out contradictory certifications (e.g., "gluten-free" when product contains gluten)
+  const certifications = getProductCertifications(
+    product.labels,
+    product.labelTags || [],
+    product.allergenInfo?.allergens
+  );
   const hasCertifications = certifications.length > 0;
 
   // Kombiner alle norske produkter (fra alternatives og similarProducts)

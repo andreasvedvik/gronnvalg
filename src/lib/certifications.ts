@@ -278,9 +278,19 @@ export function shouldHideLabel(label: string): boolean {
 }
 
 // Get all certifications for a product
-export function getProductCertifications(labels: string[], labelTags: string[]): CertificationInfo[] {
+// allergens parameter is used to filter out contradictory certifications
+export function getProductCertifications(
+  labels: string[],
+  labelTags: string[],
+  allergens?: string[]
+): CertificationInfo[] {
   const found: CertificationInfo[] = [];
   const seen = new Set<string>();
+
+  // Check allergens to prevent contradictory certifications
+  const allergenLower = (allergens || []).map(a => a.toLowerCase()).join(' ');
+  const hasGluten = allergenLower.includes('gluten') || allergenLower.includes('wheat') || allergenLower.includes('hvete');
+  const hasLactose = allergenLower.includes('milk') || allergenLower.includes('melk') || allergenLower.includes('lactose') || allergenLower.includes('laktose');
 
   // Check both labels and label tags
   const allLabels = [...labels, ...labelTags];
@@ -288,6 +298,13 @@ export function getProductCertifications(labels: string[], labelTags: string[]):
   for (const label of allLabels) {
     const cert = findCertification(label);
     if (cert && !seen.has(cert.id)) {
+      // Skip contradictory certifications
+      if (cert.id === 'gluten-free' && hasGluten) {
+        continue; // Don't show gluten-free if product contains gluten
+      }
+      if (cert.id === 'lactose-free' && hasLactose) {
+        continue; // Don't show lactose-free if product contains lactose/milk
+      }
       found.push(cert);
       seen.add(cert.id);
     }
