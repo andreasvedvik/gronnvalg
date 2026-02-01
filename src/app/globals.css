@@ -531,3 +531,53 @@ html {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(34, 197, 94, 0.5);
 }
+
+/* ===== REDUCED MOTION ===== */
+/* Respect user's motion preferences for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-breathe,
+  .animate-pulse-ring,
+  .animate-fade-in-up,
+  .animate-scale-in,
+  .animate-shimmer,
+  .animate-glow,
+  .animate-pulse-green,
+  .animate-fadeIn,
+  .animate-scan-pulse {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Ensure content is visible without animations */
+  .stagger-1,
+  .stagger-2,
+  .stagger-3,
+  .stagger-4,
+  .stagger-5,
+  .stagger-6 {
+    animation-delay: 0ms !important;
+  }
+}
+
+/* ===== SCREEN READER ONLY ===== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

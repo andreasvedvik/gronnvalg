@@ -4,6 +4,8 @@ import "./globals.css";
 import PWARegister from "@/components/PWARegister";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Providers from "@/components/Providers";
+import SkipLink from "@/components/SkipLink";
+import RouteAnnouncer from "@/components/RouteAnnouncer";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -48,6 +50,8 @@ export default function RootLayout({
       <body className={`${plusJakarta.className} antialiased`}>
         <ErrorBoundary>
           <Providers>
+            <SkipLink />
+            <RouteAnnouncer />
             <PWARegister />
             {children}
           </Providers>

@@ -1,20 +1,80 @@
-// Miljøscore Calculation Logic (Grønnest App)
-// Combines sustainability (eco) and health scores with Norwegian context
+/**
+ * GrønnScore - Environmental Scoring Algorithm for Norwegian Products
+ *
+ * This module implements the GrønnScore algorithm, a composite sustainability
+ * scoring system designed specifically for Norwegian consumers. It combines
+ * multiple environmental factors to provide a comprehensive assessment of
+ * a product's environmental impact.
+ *
+ * ## Scoring Components (Weighted)
+ *
+ * 1. **Eco-Score (40%)**: Official environmental impact score from Open Food Facts
+ *    - Based on lifecycle assessment (LCA)
+ *    - Grades: A (best) to E (worst)
+ *
+ * 2. **Transport (25%)**: Distance the product traveled to reach Norway
+ *    - Norwegian products: 100 points
+ *    - Nordic countries: 80 points
+ *    - EU countries: 50 points
+ *    - Overseas: 20 points
+ *
+ * 3. **Norwegian Origin (15%)**: Bonus for locally produced products
+ *    - Norwegian: 100 points
+ *    - Imported: 30 points
+ *
+ * 4. **Packaging (10%)**: Environmental impact of packaging
+ *    - Glass/Paper: 85-90 points
+ *    - Metal: 75-80 points
+ *    - Recyclable plastic: 55-70 points
+ *    - Non-recyclable plastic: 40 points
+ *
+ * 5. **Certifications (10%)**: Environmental and ethical certifications
+ *    - Each certification adds 10 points
+ *    - Base: 50, Max: 100
+ *
+ * ## Grade Thresholds
+ * - A: 80-100 (Excellent)
+ * - B: 60-79 (Good)
+ * - C: 40-59 (Average)
+ * - D: 20-39 (Poor)
+ * - E: 0-19 (Very Poor)
+ *
+ * @module scoring
+ * @author Grønnest Team
+ * @version 1.0.0
+ */
 
 import { ProductData } from './openfoodfacts';
 
+/**
+ * Represents a single component of the score breakdown
+ * @interface ScoreBreakdownItem
+ */
 export interface ScoreBreakdownItem {
+  /** Numeric score from 0-100 */
   score: number;
+  /** Human-readable label for this component */
   label: string;
+  /** Detailed description of the score */
   description: string;
-  dataAvailable: boolean; // NEW: indicates if we have real data
-  confidence: 'high' | 'medium' | 'low'; // NEW: how confident are we
+  /** Whether real data was available for this component */
+  dataAvailable: boolean;
+  /** Confidence level in the score accuracy */
+  confidence: 'high' | 'medium' | 'low';
 }
 
+/**
+ * Complete result from the GrønnScore calculation
+ * @interface GrønnScoreResult
+ */
 export interface GrønnScoreResult {
+  /** Total weighted score from 0-100 */
   total: number;
+  /** Letter grade from A (best) to E (worst) */
   grade: 'A' | 'B' | 'C' | 'D' | 'E';
-  dataQuality: number; // NEW: 0-100 percentage of data we actually have
+  /** Percentage of data points that had real data (0-100) */
+  dataQuality: number;
+  /** Breakdown of individual scoring components */
   breakdown: {
     ecoscore: ScoreBreakdownItem;
     transport: ScoreBreakdownItem;
@@ -22,6 +82,7 @@ export interface GrønnScoreResult {
     packaging: ScoreBreakdownItem;
     certifications: ScoreBreakdownItem;
   };
+  /** Health-related scores (Nutri-Score and NOVA) */
   healthScore: {
     total: number;
     grade: 'A' | 'B' | 'C' | 'D' | 'E';
@@ -312,6 +373,27 @@ function calculateHealthScore(product: ProductData): { total: number; grade: 'A'
   };
 }
 
+/**
+ * Calculates the GrønnScore for a product
+ *
+ * This is the main entry point for the scoring algorithm. It takes a product
+ * and returns a comprehensive score result including the total score, grade,
+ * data quality indicator, and detailed breakdown of all components.
+ *
+ * @param product - Product data from Open Food Facts API
+ * @returns Complete GrønnScore result with breakdown and health scores
+ *
+ * @example
+ * ```typescript
+ * const product = await fetchProduct('7038010009457');
+ * const score = calculateGrønnScore(product);
+ *
+ * console.log(`Total: ${score.total}/100`);
+ * console.log(`Grade: ${score.grade}`);
+ * console.log(`Data Quality: ${score.dataQuality}%`);
+ * console.log(`Ecoscore: ${score.breakdown.ecoscore.score}`);
+ * ```
+ */
 export function calculateGrønnScore(product: ProductData): GrønnScoreResult {
   // 1. Base ecoscore (40% weight)
   const ecoscore = getEcoscoreValue(product.ecoscore.grade);
@@ -423,7 +505,17 @@ export function calculateGrønnScore(product: ProductData): GrønnScoreResult {
   };
 }
 
-// Get color class based on score
+/**
+ * Returns a Tailwind CSS background color class based on the score
+ *
+ * @param score - Numeric score from 0-100
+ * @returns Tailwind CSS class for background color
+ *
+ * @example
+ * ```tsx
+ * <div className={getScoreColor(85)}>Score</div> // bg-green-500
+ * ```
+ */
 export function getScoreColor(score: number): string {
   if (score >= 80) return 'bg-green-500';
   if (score >= 60) return 'bg-lime-500';
@@ -432,6 +524,12 @@ export function getScoreColor(score: number): string {
   return 'bg-red-500';
 }
 
+/**
+ * Returns a Tailwind CSS text color class based on the score
+ *
+ * @param score - Numeric score from 0-100
+ * @returns Tailwind CSS class for text color
+ */
 export function getScoreTextColor(score: number): string {
   if (score >= 80) return 'text-green-600';
   if (score >= 60) return 'text-lime-600';
@@ -440,6 +538,17 @@ export function getScoreTextColor(score: number): string {
   return 'text-red-600';
 }
 
+/**
+ * Returns an emoji representing the grade
+ *
+ * @param grade - Letter grade (A-E)
+ * @returns Emoji corresponding to the grade
+ *
+ * @example
+ * ```tsx
+ * <span>{getGradeEmoji('A')}</span> // 🌟
+ * ```
+ */
 export function getGradeEmoji(grade: string): string {
   const emojis: Record<string, string> = {
     'A': '🌟',

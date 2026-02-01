@@ -1,5 +1,54 @@
 // Open Food Facts API Integration
 
+// ===== ABORT CONTROLLER HELPERS =====
+/**
+ * Creates an AbortController with automatic timeout cleanup
+ * @param timeoutMs - Timeout in milliseconds (default: 10000ms)
+ * @returns Object with controller and cleanup function
+ */
+export function createAbortController(timeoutMs: number = 10000): {
+  controller: AbortController;
+  cleanup: () => void;
+} {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  return {
+    controller,
+    cleanup: () => clearTimeout(timeoutId),
+  };
+}
+
+/**
+ * Fetches with abort signal support
+ * @param url - URL to fetch
+ * @param signal - Optional AbortSignal for cancellation
+ * @param headers - Optional headers
+ * @returns Response or null if aborted/failed
+ */
+async function fetchWithAbort(
+  url: string,
+  signal?: AbortSignal,
+  headers?: Record<string, string>
+): Promise<Response | null> {
+  try {
+    const response = await fetch(url, {
+      signal,
+      headers: {
+        'User-Agent': 'Grønnest/1.0 (contact@gronnest.no)',
+        ...headers,
+      },
+    });
+    return response;
+  } catch (error) {
+    // Return null if aborted or network error
+    if (error instanceof Error && error.name === 'AbortError') {
+      return null;
+    }
+    throw error;
+  }
+}
+
 // ===== CACHING =====
 interface CacheEntry<T> {
   data: T;
@@ -268,7 +317,13 @@ function parseAllergenTags(tags: string[] | undefined): string[] {
   });
 }
 
-export async function fetchProduct(barcode: string): Promise<ProductData | null> {
+/**
+ * Fetches product data from Open Food Facts API
+ * @param barcode - Product barcode
+ * @param signal - Optional AbortSignal for request cancellation
+ * @returns Product data or null if not found/aborted
+ */
+export async function fetchProduct(barcode: string, signal?: AbortSignal): Promise<ProductData | null> {
   // Check cache first
   const cached = getCached(productCache, barcode);
   if (cached !== undefined) {
@@ -283,11 +338,11 @@ export async function fetchProduct(barcode: string): Promise<ProductData | null>
     ];
 
     for (const url of urls) {
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'Grønnest/1.0 (contact@gronnest.no)',
-        },
-      });
+      // Check if aborted before making request
+      if (signal?.aborted) return null;
+
+      const response = await fetchWithAbort(url, signal);
+      if (!response) continue; // Aborted or failed
 
       if (!response.ok) continue;
 
@@ -520,8 +575,15 @@ function getBestSearchCategory(productName: string, categories: string): string 
   return nonGeneric || categoryList[0] || categories.split(',')[0]?.trim() || '';
 }
 
-// Search for alternative products - ONLY truly Norwegian products
-export async function searchAlternatives(category: string, limit: number = 5, productName: string = ''): Promise<ProductData[]> {
+/**
+ * Search for alternative products - ONLY truly Norwegian products
+ * @param category - Product category
+ * @param limit - Maximum number of results
+ * @param productName - Product name for better matching
+ * @param signal - Optional AbortSignal for request cancellation
+ * @returns Array of alternative products
+ */
+export async function searchAlternatives(category: string, limit: number = 5, productName: string = '', signal?: AbortSignal): Promise<ProductData[]> {
   // Get a better search category based on product name and categories
   const searchCategory = getBestSearchCategory(productName, category);
   const cacheKey = `alt:${searchCategory}:${limit}`;
@@ -531,14 +593,14 @@ export async function searchAlternatives(category: string, limit: number = 5, pr
   }
 
   try {
+    // Check if aborted before making request
+    if (signal?.aborted) return [];
+
     // Search for products in the same category, fetch more to filter for Norwegian
     const searchUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(searchCategory)}&tagtype_1=countries&tag_contains_1=contains&tag_1=norway&sort_by=ecoscore_score&page_size=${limit * 4}&json=1`;
 
-    const response = await fetch(searchUrl, {
-      headers: {
-        'User-Agent': 'Grønnest/1.0 (contact@gronnest.no)',
-      },
-    });
+    const response = await fetchWithAbort(searchUrl, signal);
+    if (!response) return []; // Aborted
 
     if (!response.ok) return [];
 
@@ -766,11 +828,18 @@ export async function searchProducts(query: string, limit: number = 10): Promise
   }
 }
 
-// Search for similar products - KUN NORSKE PRODUKTER
-// Denne appen er laget for norske forbrukere, så vi viser kun norske produkter
+/**
+ * Search for similar products - KUN NORSKE PRODUKTER
+ * Denne appen er laget for norske forbrukere, så vi viser kun norske produkter
+ * @param product - The product to find similar products for
+ * @param limit - Maximum number of results
+ * @param signal - Optional AbortSignal for request cancellation
+ * @returns Array of similar Norwegian products
+ */
 export async function searchSimilarProducts(
   product: ProductData,
-  limit: number = 8
+  limit: number = 8,
+  signal?: AbortSignal
 ): Promise<ProductData[]> {
   const searchCategory = getBestSearchCategory(product.name, product.category);
   const cacheKey = `similar-no:${searchCategory}:${limit}`;
@@ -782,14 +851,14 @@ export async function searchSimilarProducts(
   }
 
   try {
+    // Check if aborted before making request
+    if (signal?.aborted) return [];
+
     // Søk KUN i norsk database med Norway-filter
     const norwegianUrl = `https://no.openfoodfacts.org/cgi/search.pl?action=process&tagtype_0=categories&tag_contains_0=contains&tag_0=${encodeURIComponent(searchCategory)}&tagtype_1=countries&tag_contains_1=contains&tag_1=norway&sort_by=unique_scans_n&page_size=${limit * 4}&json=1`;
 
-    const response = await fetch(norwegianUrl, {
-      headers: {
-        'User-Agent': 'Grønnest/1.0 (contact@gronnest.no)',
-      },
-    });
+    const response = await fetchWithAbort(norwegianUrl, signal);
+    if (!response) return []; // Aborted
 
     if (!response.ok) {
       return [];
