@@ -421,14 +421,13 @@ export default function ProductCard({ product, score, onClose, alternatives = []
           </div>
         </div>
 
-        {/* Lignende norske produkter - kun norske produkter for norske brukere */}
-        {(hasNorwegianProducts || isLoadingExtras) && (
+        {/* Lignende norske produkter - kun vis når vi faktisk har produkter */}
+        {hasNorwegianProducts && (
           <div className="mx-4 mt-4 mb-6">
-            <div className="bg-green-50 rounded-2xl p-4">
-              <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-4">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
                 <span className="text-lg">🇳🇴</span>
                 {product.isNorwegian ? t.similarNorwegianProducts : t.norwegianAlternatives}
-                {isLoadingExtras && <Loader2 className="w-4 h-4 animate-spin text-green-600" />}
               </h3>
               <div className="space-y-2">
                 {norwegianProducts.slice(0, 5).map((alt, i) => (
@@ -482,30 +481,6 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                   </button>
                 ))}
               </div>
-              {norwegianProducts.length === 0 && !isLoadingExtras && (
-                <div className="text-center py-6">
-                  <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
-                    <span className="text-2xl opacity-50">🇳🇴</span>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    {t.noNorwegianProductsFound}
-                  </p>
-                </div>
-              )}
-              {norwegianProducts.length === 0 && isLoadingExtras && (
-                <div className="space-y-2 animate-pulse">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-xl">
-                      <div className="w-12 h-12 bg-gray-200 rounded-xl flex-shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 w-3/4 bg-gray-200 rounded" />
-                        <div className="h-3 w-1/2 bg-gray-200 rounded" />
-                      </div>
-                      <div className="w-8 h-6 bg-gray-200 rounded-full" />
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         )}
