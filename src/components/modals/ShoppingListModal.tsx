@@ -1,12 +1,11 @@
 'use client';
 
-import { X, ShoppingCart, Plus, Check, Trash2, Search, Loader2, Share2, Download, Users } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { X, ShoppingCart, Plus, Check, Trash2, Search, Loader2, Share2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ProductData } from '@/lib/openfoodfacts';
 import { useLanguage } from '@/lib/i18n';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
-import FamilyShareModal from './FamilyShareModal';
 
 interface ShoppingItem {
   id: string;
@@ -24,7 +23,6 @@ interface ShoppingListModalProps {
   onToggleItem: (id: string) => void;
   onRemoveItem: (id: string) => void;
   onClearCompleted: () => void;
-  onSyncItems?: (items: ShoppingItem[]) => void;
 }
 
 export default function ShoppingListModal({
@@ -35,7 +33,6 @@ export default function ShoppingListModal({
   onToggleItem,
   onRemoveItem,
   onClearCompleted,
-  onSyncItems,
 }: ShoppingListModalProps) {
   const { t } = useLanguage();
   const focusTrapRef = useFocusTrap(isOpen, onClose);
@@ -43,7 +40,6 @@ export default function ShoppingListModal({
   const [searchResults, setSearchResults] = useState<ProductData[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [showFamilyShare, setShowFamilyShare] = useState(false);
 
   // Debounced search
   useEffect(() => {
@@ -136,18 +132,9 @@ export default function ShoppingListModal({
               <ShoppingCart className="w-5 h-5" />
               {t.shoppingList}
             </h2>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowFamilyShare(true)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-                title={t.familyMode || 'Del med familie'}
-              >
-                <Users className="w-5 h-5 text-green-600 dark:text-green-400" />
-              </button>
-              <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
           </div>
 
           {/* Add item input with search */}
@@ -314,48 +301,17 @@ export default function ShoppingListModal({
                   {t.removeCompleted}
                 </button>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleExport}
-                  className="flex-1 py-2 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center justify-center gap-2 transition-colors"
-                >
-                  <Share2 className="w-4 h-4" />
-                  {t.exportList || 'Del handleliste'}
-                </button>
-                <button
-                  onClick={() => setShowFamilyShare(true)}
-                  className="py-2 px-4 bg-green-500 hover:bg-green-600 rounded-lg text-sm font-medium text-white flex items-center justify-center gap-2 transition-colors"
-                >
-                  <Users className="w-4 h-4" />
-                  {t.familyMode || 'Familie'}
-                </button>
-              </div>
+              <button
+                onClick={handleExport}
+                className="w-full py-2 px-4 bg-green-500 hover:bg-green-600 rounded-lg text-sm font-medium text-white flex items-center justify-center gap-2 transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+                {t.exportList || 'Del handleliste'}
+              </button>
             </div>
           )}
         </div>
       </div>
-
-      {/* Family Share Modal */}
-      <FamilyShareModal
-        isOpen={showFamilyShare}
-        onClose={() => setShowFamilyShare(false)}
-        items={items.map(item => ({
-          id: item.id,
-          name: item.name,
-          checked: item.checked,
-          barcode: item.barcode,
-          imageUrl: item.imageUrl,
-        }))}
-        onSyncItems={onSyncItems ? (syncedItems) => {
-          onSyncItems(syncedItems.map(item => ({
-            id: item.id,
-            name: item.name,
-            checked: item.checked,
-            barcode: item.barcode,
-            imageUrl: item.imageUrl,
-          })));
-        } : undefined}
-      />
     </div>
   );
 }

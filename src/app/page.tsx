@@ -305,10 +305,6 @@ export default function Home() {
     setShoppingList(prev => prev.filter(item => !item.checked));
   };
 
-  // Sync shopping list from family share
-  const syncShoppingItems = (syncedItems: ShoppingItem[]) => {
-    setShoppingList(syncedItems);
-  };
 
   // Comparison handlers
   const addToComparison = (result: ScanResult) => {
@@ -569,7 +565,6 @@ export default function Home() {
             onToggleItem={toggleShoppingItem}
             onRemoveItem={removeShoppingItem}
             onClearCompleted={clearCompletedItems}
-            onSyncItems={syncShoppingItems}
           />
         </Suspense>
       )}

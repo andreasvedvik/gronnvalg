@@ -61,16 +61,16 @@ export default function ProductCard({ product, score, onClose, alternatives = []
   );
   const hasNorwegianProducts = norwegianProducts.length > 0;
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center">
-      <div className="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-900 w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 z-10 rounded-t-3xl">
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 flex items-center gap-3 z-10 rounded-t-3xl">
           <button
-            onClick={onClose}
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
             aria-label={t.close}
-            className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors touch-manipulation"
           >
-            <X className="w-5 h-5 text-gray-600" />
+            <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-gray-900 truncate">{product.name}</h2>
@@ -82,11 +82,11 @@ export default function ProductCard({ product, score, onClose, alternatives = []
             <span className="text-xl" title={t.producedInNorway}>🇳🇴</span>
           )}
           <button
-            onClick={handleShare}
-            className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            onClick={(e) => { e.stopPropagation(); handleShare(); }}
+            className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors touch-manipulation"
             aria-label={t.export}
           >
-            <Share2 className="w-5 h-5 text-gray-600" />
+            <Share2 className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
         </div>
 
@@ -434,8 +434,12 @@ export default function ProductCard({ product, score, onClose, alternatives = []
                 {norwegianProducts.slice(0, 5).map((alt, i) => (
                   <button
                     key={`no-${alt.barcode}-${i}`}
-                    onClick={() => onSelectProduct?.(alt.barcode)}
-                    className="w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer text-left"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onSelectProduct?.(alt.barcode);
+                    }}
+                    className="w-full flex items-center gap-3 p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600 transition-colors cursor-pointer text-left touch-manipulation"
                   >
                     <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0 relative">
                       {alt.imageUrl ? (
@@ -520,10 +524,10 @@ export default function ProductCard({ product, score, onClose, alternatives = []
         </div>
 
         {/* Action Button */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-100 p-4">
+        <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 p-4">
           <button
-            onClick={onClose}
-            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition-colors shadow-lg"
+            onClick={(e) => { e.stopPropagation(); onClose(); }}
+            className="w-full py-4 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 transition-colors shadow-lg touch-manipulation"
           >
             {t.scanNewProduct}
           </button>
